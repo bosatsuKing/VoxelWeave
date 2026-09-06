@@ -34,8 +34,8 @@ VoxelWeave does **not** aim to clone a proprietary converter. Its primary value 
 
 ## Status
 
-Step 1 foundation: the Minecraft 26.1.2 client starts with or without the optional
-Litematica/MaLiLib integration. Schematic editing is not implemented yet.
+Step 2 adds immutable world-space selection/placement geometry to the Step 1
+optional Litematica/MaLiLib integration. Schematic editing is not implemented yet.
 
 ## Initial MVP scope
 
@@ -78,4 +78,9 @@ To include the pinned Litematica and MaLiLib versions in the development runtime
 ./gradlew runClient -PwithLitematica=true
 ```
 
-Press `V` in a world to show the read-only integration diagnostic. It reports only dependency presence, selected-placement presence and current-selection presence. It does not modify schematics, worlds or configuration.
+Press `V` in a world to show the read-only integration diagnostic. It reports dependency presence,
+selected-placement presence, current-selection presence and whether their world-space intersection
+is non-empty. It does not modify schematics, worlds or configuration.
+
+Pure domain and boundary-conversion tests run with `./gradlew test` without starting Minecraft.
+See [selection domain](docs/SELECTION_DOMAIN.md) for coordinate and snapshot semantics.

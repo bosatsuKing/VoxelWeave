@@ -10,6 +10,7 @@ public enum IntegrationState {
     PLACEMENT_DISABLED("message.voxelweave.diagnostic.placement_disabled"),
     SELECTION_MISSING("message.voxelweave.diagnostic.selection_missing"),
     SELECTION_INVALID("message.voxelweave.diagnostic.selection_invalid"),
+    TARGET_EMPTY("message.voxelweave.diagnostic.target_empty"),
     INTEGRATION_ERROR("message.voxelweave.diagnostic.integration_error");
 
     private final String translationKey;

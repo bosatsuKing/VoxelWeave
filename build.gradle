@@ -10,6 +10,14 @@ base {
 }
 
 repositories {
+    exclusiveContent {
+        forRepository { mavenCentral() }
+        filter {
+            includeGroupByRegex "org\\.junit.*"
+            includeGroup "org.opentest4j"
+            includeGroup "org.apiguardian"
+        }
+    }
     maven {
         name = "Masa"
         url = "https://masa.dy.fi/maven/sakura-ryoko"
@@ -42,6 +50,8 @@ def withLitematica = providers.gradleProperty("withLitematica")
         .getOrElse(false)
 
 dependencies {
+    testImplementation "org.junit.jupiter:junit-jupiter:5.12.2"
+    testRuntimeOnly "org.junit.platform:junit-platform-launcher:1.12.2"
     minecraft "com.mojang:minecraft:${project.minecraft_version}"
     implementation "net.fabricmc:fabric-loader:${project.loader_version}"
     implementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
@@ -74,4 +84,8 @@ java {
     withSourcesJar()
     sourceCompatibility = JavaVersion.VERSION_25
     targetCompatibility = JavaVersion.VERSION_25
+}
+
+test {
+    useJUnitPlatform()
 }
