@@ -1,0 +1,22 @@
+{
+  "key.category.voxelweave.general": "VoxelWeave",
+  "key.voxelweave.diagnose_integration": "Run read-only integration diagnostic",
+  "message.voxelweave.diagnostic.header": "[VoxelWeave] Read-only integration diagnostic",
+  "message.voxelweave.diagnostic.litematica": "Litematica loaded: %s (%s)",
+  "message.voxelweave.diagnostic.malilib": "MaLiLib loaded: %s (%s)",
+  "message.voxelweave.diagnostic.placement": "Selected schematic placement: %s",
+  "message.voxelweave.diagnostic.selection": "Current selection: %s",
+  "message.voxelweave.diagnostic.yes": "yes",
+  "message.voxelweave.diagnostic.no": "no",
+  "message.voxelweave.diagnostic.version_unavailable": "n/a",
+  "message.voxelweave.diagnostic.ready": "Ready: the selected placement is enabled and the selection has at least one complete box.",
+  "message.voxelweave.diagnostic.litematica_missing": "Not ready: Litematica is not installed.",
+  "message.voxelweave.diagnostic.malilib_missing": "Not ready: MaLiLib is not installed.",
+  "message.voxelweave.diagnostic.litematica_unsupported": "Not ready: this build supports Litematica 0.27.12.",
+  "message.voxelweave.diagnostic.malilib_unsupported": "Not ready: this build supports MaLiLib 0.28.11.",
+  "message.voxelweave.diagnostic.placement_missing": "Not ready: no schematic placement is selected.",
+  "message.voxelweave.diagnostic.placement_disabled": "Not ready: the selected schematic placement is disabled.",
+  "message.voxelweave.diagnostic.selection_missing": "Not ready: there is no current selection.",
+  "message.voxelweave.diagnostic.selection_invalid": "Not ready: the current selection has no complete selection box.",
+  "message.voxelweave.diagnostic.integration_error": "Not ready: the Litematica integration could not be loaded safely. Check the log for version details."
+}

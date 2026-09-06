@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "id": "voxelweave",
+  "version": "${version}",
+  "name": "VoxelWeave",
+  "description": "Client-side tools for refining existing Litematica schematics.",
+  "contact": {
+    "sources": "https://github.com/bosatsuKing/VoxelWeave"
+  },
+  "environment": "client",
+  "entrypoints": {
+    "client": [
+      "io.github.bosatsuking.voxelweave.VoxelWeaveClient"
+    ]
+  },
+  "depends": {
+    "fabricloader": ">=0.19.5",
+    "minecraft": "~26.1.2",
+    "java": ">=25",
+    "fabric-api": "*"
+  },
+  "suggests": {
+    "litematica": "=0.27.12",
+    "malilib": "=0.28.11"
+  }
+}

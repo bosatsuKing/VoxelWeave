@@ -1,0 +1,22 @@
+{
+  "key.category.voxelweave.general": "VoxelWeave",
+  "key.voxelweave.diagnose_integration": "読み取り専用integration診断を実行",
+  "message.voxelweave.diagnostic.header": "[VoxelWeave] 読み取り専用integration診断",
+  "message.voxelweave.diagnostic.litematica": "Litematica導入済み: %s (%s)",
+  "message.voxelweave.diagnostic.malilib": "MaLiLib導入済み: %s (%s)",
+  "message.voxelweave.diagnostic.placement": "選択中schematic placement: %s",
+  "message.voxelweave.diagnostic.selection": "現在のselection: %s",
+  "message.voxelweave.diagnostic.yes": "はい",
+  "message.voxelweave.diagnostic.no": "いいえ",
+  "message.voxelweave.diagnostic.version_unavailable": "なし",
+  "message.voxelweave.diagnostic.ready": "操作対象として成立: placementが有効で、selectionに両端が設定されたboxがあります。",
+  "message.voxelweave.diagnostic.litematica_missing": "未成立: Litematicaが導入されていません。",
+  "message.voxelweave.diagnostic.malilib_missing": "未成立: MaLiLibが導入されていません。",
+  "message.voxelweave.diagnostic.litematica_unsupported": "未成立: このビルドが対応するLitematicaは0.27.12です。",
+  "message.voxelweave.diagnostic.malilib_unsupported": "未成立: このビルドが対応するMaLiLibは0.28.11です。",
+  "message.voxelweave.diagnostic.placement_missing": "未成立: schematic placementが選択されていません。",
+  "message.voxelweave.diagnostic.placement_disabled": "未成立: 選択中schematic placementが無効です。",
+  "message.voxelweave.diagnostic.selection_missing": "未成立: 現在のselectionがありません。",
+  "message.voxelweave.diagnostic.selection_invalid": "未成立: 現在のselectionに両端が設定されたboxがありません。",
+  "message.voxelweave.diagnostic.integration_error": "未成立: Litematica integrationを安全に読み込めませんでした。バージョン詳細はログを確認してください。"
+}

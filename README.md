@@ -34,9 +34,8 @@ VoxelWeave does **not** aim to clone a proprietary converter. Its primary value 
 
 ## Status
 
-Early prototype / repository bootstrap.
-
-The existing prototype targets the Minecraft 26.1.2 generation, but exact Minecraft, Fabric Loader, Fabric API, Java, Gradle and Litematica/MaLiLib versions must be verified before build configuration is finalized.
+Step 1 foundation: the Minecraft 26.1.2 client starts with or without the optional
+Litematica/MaLiLib integration. Schematic editing is not implemented yet.
 
 ## Initial MVP scope
 
@@ -58,3 +57,25 @@ The existing prototype targets the Minecraft 26.1.2 generation, but exact Minecr
 ## Development handoff
 
 See [AGENTS.md](AGENTS.md) for implementation rules and [docs/PRODUCT.md](docs/PRODUCT.md) for the current product definition.
+
+## Development
+
+VoxelWeave targets Minecraft 26.1.2 and requires JDK 25. Build with the checked-in Gradle Wrapper:
+
+```text
+./gradlew build
+```
+
+The default development client intentionally starts without Litematica to verify that the optional integration fails safely:
+
+```text
+./gradlew runClient
+```
+
+To include the pinned Litematica and MaLiLib versions in the development runtime only:
+
+```text
+./gradlew runClient -PwithLitematica=true
+```
+
+Press `V` in a world to show the read-only integration diagnostic. It reports only dependency presence, selected-placement presence and current-selection presence. It does not modify schematics, worlds or configuration.
