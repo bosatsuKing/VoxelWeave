@@ -4,7 +4,7 @@
 
 Keep Minecraft/Litematica-specific APIs at the boundary and keep the editing engine deterministic and testable.
 
-## Proposed layers
+## Layers
 
 ### 1. Integration layer
 
@@ -14,21 +14,47 @@ Responsibilities:
 - keybind/menu entry points
 - Litematica/MaLiLib API access
 - conversion between external schematic representations and VoxelWeave domain objects
+- read-only capture of the active bounded schematic target
+- future write/export adapters behind explicit safety boundaries
 
 Must not contain transformation policy beyond adapter-level mapping.
+
+Current read path:
+
+```text
+Litematica selected placement + current selection
+        ↓
+LitematicaTargetMapping
+        ↓
+OperationTarget (world-space selection × placement)
+        ↓
+LitematicaBlockSnapshotAdapter
+        ↓
+SchematicSnapshotCapture
+ ├─ OperationTarget
+ └─ SchematicSnapshot
+        ↓
+EditWorkspace / transformation layer
+```
+
+`LitematicaBlockSnapshotAdapter` reads the schematic state as Litematica presents it in world space. This preserves placement/subregion rotation and mirror in directional block states without leaking Minecraft/Litematica types into pure domain code.
+
+The schematic world can contain multiple placements. A captured coordinate is accepted only when it maps unambiguously to exactly one part of the selected placement and no foreign placement overlaps it. Ambiguous coordinates fail closed instead of silently producing a composite snapshot.
+
+Capture includes air as well as non-air states for every visited coordinate inside the bounded target. Missing coordinates therefore mean "outside the captured data", not "air".
 
 ### 2. Workspace layer
 
 Represents the user's current editing session:
 
-- source schematic identity
-- selected region
-- palette snapshot
-- pending preview
-- committed VoxelWeave operations
-- dirty/saved state
+- immutable source snapshot
+- committed snapshot
+- pending preview `ChangeSet`
+- undo history
+- redo history
+- dirty state
 
-The workspace should make source-vs-preview-vs-committed state explicit.
+The workspace makes source-vs-preview-vs-committed state explicit. Preview reads are overlay lookups over the pending `ChangeSet`; they do not copy the full schematic for every read.
 
 ### 3. Transformation layer
 
@@ -40,7 +66,7 @@ Initial transformation:
 ReplaceBlocks(selection, fromBlock, toBlock)
 ```
 
-Future transformations may include smoothing, dithering, noise cleanup and contour correction, but they should follow the same command/change-set model.
+Future transformations may include surface analysis, smoothing, dithering, noise cleanup and contour correction, but they should follow the same command/change-set model.
 
 ### 4. History layer
 
@@ -60,11 +86,11 @@ CommittedChangeSet
 
 Avoid relying on re-running a non-deterministic transform to perform undo.
 
-### 5. Export layer
+### 5. Export / write boundary
 
-Export is a reliability boundary.
+Writing back to Litematica and exporting `.litematic` files are reliability boundaries and are not implemented yet.
 
-Preferred flow:
+Preferred export flow:
 
 ```text
 serialize candidate
@@ -100,7 +126,9 @@ Minimum UI concepts:
 Large schematics are a primary use case.
 
 - No full-schematic scan every render tick.
-- Bound operations to explicit regions.
+- Snapshot capture is explicit/on-demand and bounded to `OperationTarget.worldRegions()`.
+- Overlapping target regions must not duplicate coordinate reads.
+- Cache integration lookups by chunk when practical.
 - Cache derived palette/statistics data with clear invalidation.
 - Prefer compact change sets over copying the full schematic for every history entry.
 - If a transformation becomes expensive, separate computation from render/update scheduling while respecting Minecraft client thread safety.
@@ -112,9 +140,11 @@ Distinguish at least:
 - unsupported integration/version
 - invalid or unavailable schematic
 - invalid selection
+- empty operation target
+- ambiguous/overlapping schematic capture
 - invalid transform parameters
 - transformation failure
-- export/IO failure
+- write/export/IO failure
 - validation failure
 
 Recoverable errors should return to a usable workspace rather than crash the client.
@@ -128,7 +158,7 @@ ui/client → workspace → transform/history/export-domain
 integration → workspace/domain adapters
 ```
 
-Pure domain/transform/history code must not depend directly on Minecraft rendering classes.
+Pure domain/transform/history code must not depend directly on Minecraft rendering classes or Litematica APIs.
 
 ## Testing strategy
 
@@ -139,17 +169,24 @@ Pure domain/transform/history code must not depend directly on Minecraft renderi
 - empty/no-op transformations
 - change-set inversion
 - undo/redo ordering
-- export policy and failure recovery logic
+- preview isolation
+- export policy and failure recovery logic when export is added
 
-### Integration tests
+### Integration tests / smoke tests
 
-- Litematica adapter mapping
-- load/edit/save/reopen path
+- Litematica selection/placement mapping
+- bounded snapshot capture from a representative `.litematic`
+- air and directional block-state capture
+- rotated/mirrored placement capture
+- overlapping-placement rejection
 - missing optional integration behavior
+- future load/edit/save/reopen path
 
 ### Manual/dev-client verification
 
-- UI behavior
-- preview rendering
-- large schematic responsiveness
-- actual export/reopen with representative converted models
+- supported Litematica/MaLiLib pair loads
+- selected placement + area selection reports READY
+- capture does not mutate schematic/world state
+- large bounded capture remains responsive enough for editing workflows
+- future preview rendering
+- future actual export/reopen with representative converted models

@@ -5,9 +5,12 @@ import fi.dy.masa.litematica.schematic.placement.SchematicPlacement;
 import fi.dy.masa.litematica.selection.AreaSelection;
 import fi.dy.masa.litematica.util.PositionUtils;
 import io.github.bosatsuking.voxelweave.domain.OperationTarget;
+import io.github.bosatsuking.voxelweave.domain.SchematicSnapshotCapture;
 import io.github.bosatsuking.voxelweave.integration.IntegrationState;
 import io.github.bosatsuking.voxelweave.integration.ReadOnlyIntegrationDiagnostic;
 import io.github.bosatsuking.voxelweave.integration.ReadOnlySchematicIntegration;
+
+import java.util.Optional;
 
 public final class LitematicaReadOnlyIntegration implements ReadOnlySchematicIntegration {
     private final String litematicaVersion;
@@ -50,5 +53,26 @@ public final class LitematicaReadOnlyIntegration implements ReadOnlySchematicInt
                 placementPresent,
                 selectionPresent,
                 target);
+    }
+
+    @Override
+    public Optional<SchematicSnapshotCapture> captureSnapshot() {
+        SchematicPlacement placement = DataManager.getSchematicPlacementManager()
+                .getSelectedSchematicPlacement();
+        AreaSelection selection = DataManager.getSelectionManager().getCurrentSelection();
+
+        if (placement == null || !placement.isEnabled() || selection == null
+                || PositionUtils.getValidBoxes(selection).isEmpty()) {
+            return Optional.empty();
+        }
+
+        OperationTarget target = LitematicaTargetMapping.snapshot(placement, selection);
+        if (target.worldRegions().isEmpty()) {
+            return Optional.empty();
+        }
+
+        return Optional.of(new SchematicSnapshotCapture(
+                target,
+                LitematicaBlockSnapshotAdapter.snapshot(placement, target)));
     }
 }
