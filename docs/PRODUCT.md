@@ -26,6 +26,21 @@ A Minecraft builder who:
 5. Undo mistakes quickly.
 6. Export/save a valid result without losing the original.
 
+## Current implementation state
+
+The repository currently contains the non-destructive editing foundation:
+
+- pinned Fabric / Litematica / MaLiLib integration for Minecraft 26.1.2;
+- immutable world-space selection and placement targeting;
+- read-only capture of the bounded selected Litematica target into `SchematicSnapshot`;
+- deterministic bounded block replacement;
+- preview/commit separation inside the VoxelWeave workspace;
+- reversible `ChangeSet` history with undo/redo.
+
+The current `commit` is internal workspace state only. It does **not** write to the Litematica schematic or Minecraft world.
+
+The next product-facing capability after snapshot capture is surface/shape analysis, which will provide shared structural information for cleanup, smoothing and contour tools rather than applying one generic procedural shape style everywhere.
+
 ## MVP
 
 ### P0
@@ -34,20 +49,23 @@ A Minecraft builder who:
 - Bounded block replacement.
 - Preview before commit.
 - Undo/redo.
+- Safe Litematica write-back boundary.
 - Safe export/recovery.
 - User-readable errors instead of hard crashes where recovery is possible.
 
 ### P1
 
+- Surface / shape analysis of captured schematic data.
 - Palette inspection and bulk mapping.
 - Color-oriented replacement assistance.
 - Noise/island cleanup.
-- Basic surface smoothing.
+- Feature-preserving surface smoothing.
 - Contour correction tools.
 
 ### P2
 
 - Dithering strategies.
+- Gradient and pattern composition.
 - Material-aware palette presets.
 - Batch transformation recipes.
 - Diff/compare views between source and refined schematic.
@@ -63,8 +81,11 @@ A user should be able to see the impact of a substantial edit before it is commi
 ### Local and bounded
 Tools should act on explicit selections or bounded schematic data, not on unrelated world state.
 
+### Preserve creator intent
+Shape tools should remove conversion artifacts and repetitive procedural noise without forcing every build toward one recognizable smoothing, gradient or contour style. Large forms, important edges and intentional detail should be preservable independently from cleanup strength.
+
 ### Stable
-A failed operation should degrade gracefully and preserve recoverable data.
+A failed operation should degrade gracefully and preserve recoverable data. Ambiguous schematic input must fail closed instead of silently editing the wrong placement.
 
 ### Fast enough for builders
 Large builds are expected. Avoid designs that rescan the entire schematic every frame or copy large block arrays unnecessarily.
@@ -75,9 +96,11 @@ Litematica/MaLiLib integration should be isolated behind adapters so transformat
 ## Success criteria for prototype → alpha
 
 - Development client launches consistently.
-- A real converted `.litematic` can be opened/identified through the supported workflow.
-- A user can select a region and preview/apply block replacement.
+- A real converted `.litematic` can be identified and captured through the supported workflow.
+- A user can select a region and preview/apply block replacement in VoxelWeave workspace state.
 - Undo/redo works across multiple VoxelWeave edits.
+- Surface analysis can distinguish at least exposed surface, interior, isolated/noisy blocks and protected structural features well enough to support later refinement tools.
+- Litematica write-back revalidates the source/target before mutation.
 - Exported output can be reopened successfully.
 - Simulated export failure does not destroy the source schematic.
 - No common editing action produces a Minecraft client crash in normal test scenarios.

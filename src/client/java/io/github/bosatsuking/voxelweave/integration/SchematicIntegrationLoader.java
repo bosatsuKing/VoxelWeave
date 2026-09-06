@@ -1,5 +1,6 @@
 package io.github.bosatsuking.voxelweave.integration;
 
+import io.github.bosatsuking.voxelweave.domain.SchematicSnapshotCapture;
 import io.github.bosatsuking.voxelweave.integration.litematica.LitematicaReadOnlyIntegration;
 import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.loader.api.ModContainer;
@@ -45,7 +46,7 @@ public final class SchematicIntegrationLoader {
         try {
             ReadOnlySchematicIntegration integration =
                     new LitematicaReadOnlyIntegration(litematicaVersion, malilibVersion);
-            return () -> safelyDiagnose(integration, logger, litematicaVersion, malilibVersion);
+            return safelyWrapped(integration, logger, litematicaVersion, malilibVersion);
         } catch (LinkageError error) {
             logger.error("VoxelWeave could not link its read-only Litematica adapter", error);
             return unavailable(IntegrationState.INTEGRATION_ERROR, true, litematicaVersion,
@@ -55,6 +56,24 @@ public final class SchematicIntegrationLoader {
 
     private static String versionOf(Optional<ModContainer> container) {
         return container.map(mod -> mod.getMetadata().getVersion().getFriendlyString()).orElse("");
+    }
+
+    private static ReadOnlySchematicIntegration safelyWrapped(
+            ReadOnlySchematicIntegration integration,
+            Logger logger,
+            String litematicaVersion,
+            String malilibVersion) {
+        return new ReadOnlySchematicIntegration() {
+            @Override
+            public ReadOnlyIntegrationDiagnostic diagnose() {
+                return safelyDiagnose(integration, logger, litematicaVersion, malilibVersion);
+            }
+
+            @Override
+            public Optional<SchematicSnapshotCapture> captureSnapshot() {
+                return safelyCapture(integration, logger);
+            }
+        };
     }
 
     private static ReadOnlyIntegrationDiagnostic safelyDiagnose(
@@ -74,6 +93,17 @@ public final class SchematicIntegrationLoader {
                     malilibVersion,
                     false,
                     false);
+        }
+    }
+
+    private static Optional<SchematicSnapshotCapture> safelyCapture(
+            ReadOnlySchematicIntegration integration,
+            Logger logger) {
+        try {
+            return integration.captureSnapshot();
+        } catch (RuntimeException | LinkageError error) {
+            logger.error("VoxelWeave read-only Litematica snapshot capture failed", error);
+            return Optional.empty();
         }
     }
 

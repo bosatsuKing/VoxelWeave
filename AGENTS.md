@@ -26,6 +26,7 @@ For each focused change:
 - edits must stay inside the selected region;
 - failed export must not corrupt the only valid copy;
 - missing/unsupported optional integrations fail with a readable message;
+- ambiguous Litematica capture must fail closed rather than mix placements;
 - do not mix unrelated refactors into feature work.
 
 Bug fixes: observation → reproduction → root cause → fix → regression test.
@@ -34,17 +35,28 @@ Bug fixes: observation → reproduction → root cause → fix → regression te
 
 - Product scope: `docs/PRODUCT.md`
 - Architecture/package boundaries: `docs/ARCHITECTURE.md`
+- Selection/snapshot semantics: `docs/SELECTION_DOMAIN.md`
 - Codex local setup: `docs/CODEX_SETUP.md`
-- Current implementation unit: GitHub Issue #1 and the issue/PR being worked on
+- Current implementation unit: the open GitHub issue and PR being worked on
 
 Do not reread every reference on every turn. Read the smallest relevant source first, then inspect code before changing dependencies or package structure.
 
 ## Current implementation order
 
+Completed foundation:
+
 1. Verify exact target dependency versions for Minecraft 26.1.2-era tooling.
 2. Establish a reproducible build/dev client.
-3. Add a narrow Litematica/MaLiLib adapter.
-4. Implement bounded block replacement as the first vertical slice.
+3. Add a narrow Litematica/MaLiLib adapter and world-space selection/placement mapping.
+4. Implement bounded block replacement as the first deterministic transformation.
 5. Add preview → commit and undo/redo.
-6. Add safe export and recovery.
-7. Then add palette/color tools, smoothing, dithering, cleanup and contour refinement.
+6. Capture the current bounded Litematica target into an immutable `SchematicSnapshot`.
+
+Next sequence:
+
+7. Add surface / shape analysis over captured schematic data.
+8. Add shape refinement tools: cleanup, spike removal, smoothing/relaxation and contour correction.
+9. Add palette/color tools: palette mapping, gradients, patterns and dithering.
+10. Add Minecraft preview rendering/UI over pending `ChangeSet` data.
+11. Add safe Litematica schematic commit/write-back with explicit recovery boundaries.
+12. Add safe `.litematic` export and validation/recovery.

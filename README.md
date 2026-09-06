@@ -34,8 +34,19 @@ VoxelWeave does **not** aim to clone a proprietary converter. Its primary value 
 
 ## Status
 
-Step 2 adds immutable world-space selection/placement geometry to the Step 1
-optional Litematica/MaLiLib integration. Schematic editing is not implemented yet.
+The first pure editing vertical slice is complete and the read-only Litematica bridge now reaches real schematic block data.
+
+Implemented foundation:
+
+1. Fabric 26.1.2 client bootstrap and pinned optional Litematica/MaLiLib integration.
+2. Immutable world-space selection / placement geometry and `selection × placement` targeting.
+3. Deterministic bounded block replacement producing immutable `ChangeSet` values.
+4. Preview → commit workspace separation with reversible undo/redo.
+5. Read-only capture of the current bounded Litematica target into a world-space `SchematicSnapshot`.
+
+The Step 5 capture includes air and non-air states inside the target, deduplicates overlapping target regions and reads the block state as Litematica presents it in world space. If another schematic placement or multiple selected-placement subregions overlap the same captured coordinate, capture fails closed instead of silently mixing ambiguous schematic-world data.
+
+Still not implemented: Litematica schematic write-back, Minecraft preview rendering/UI, surface analysis, smoothing/cleanup/contour tools, palette/gradient/pattern/dithering tools, and safe `.litematic` export/recovery.
 
 ## Initial MVP scope
 
@@ -56,7 +67,7 @@ optional Litematica/MaLiLib integration. Schematic editing is not implemented ye
 
 ## Development handoff
 
-See [AGENTS.md](AGENTS.md) for implementation rules and [docs/PRODUCT.md](docs/PRODUCT.md) for the current product definition.
+See [AGENTS.md](AGENTS.md) for implementation rules, [docs/PRODUCT.md](docs/PRODUCT.md) for the product definition, and [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for package boundaries.
 
 ## Development
 
@@ -82,5 +93,18 @@ Press `V` in a world to show the read-only integration diagnostic. It reports de
 selected-placement presence, current-selection presence and whether their world-space intersection
 is non-empty. It does not modify schematics, worlds or configuration.
 
-Pure domain and boundary-conversion tests run with `./gradlew test` without starting Minecraft.
-See [selection domain](docs/SELECTION_DOMAIN.md) for coordinate and snapshot semantics.
+When the integration is ready, `ReadOnlySchematicIntegration.captureSnapshot()` exposes the current bounded target and immutable `SchematicSnapshot` to the VoxelWeave editing workspace. Capture is read-only and is not automatically run every render tick.
+
+Pure domain and transformation/history tests run with:
+
+```text
+./gradlew test
+```
+
+Before merging Litematica integration changes, also verify:
+
+```text
+./gradlew build -PwithLitematica=true
+```
+
+See [selection and snapshot domain](docs/SELECTION_DOMAIN.md) for coordinate and capture semantics.
