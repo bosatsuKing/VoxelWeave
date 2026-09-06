@@ -37,9 +37,9 @@ class ReplacementWorkspaceFlowTest {
         assertEquals(A, previewed.committedSnapshot().blockAt(p0));
         assertEquals(A, previewed.committedSnapshot().blockAt(p1));
         assertEquals(A, previewed.committedSnapshot().blockAt(p2));
-        assertEquals(A, previewed.previewSnapshot().blockAt(p0));
-        assertEquals(B, previewed.previewSnapshot().blockAt(p1));
-        assertEquals(A, previewed.previewSnapshot().blockAt(p2));
+        assertEquals(A, previewed.previewBlockAt(p0));
+        assertEquals(B, previewed.previewBlockAt(p1));
+        assertEquals(A, previewed.previewBlockAt(p2));
 
         EditWorkspace committed = previewed.commitPreview();
         assertEquals(A, committed.committedSnapshot().blockAt(p0));

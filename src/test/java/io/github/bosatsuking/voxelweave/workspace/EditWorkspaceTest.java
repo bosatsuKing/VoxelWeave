@@ -29,7 +29,8 @@ class EditWorkspaceTest {
 
         assertEquals(A, workspace.sourceSnapshot().blockAt(P0));
         assertEquals(A, workspace.committedSnapshot().blockAt(P0));
-        assertEquals(B, workspace.previewSnapshot().blockAt(P0));
+        assertEquals(B, workspace.previewBlockAt(P0));
+        assertEquals(A, workspace.previewBlockAt(P1));
         assertTrue(workspace.hasPreview());
         assertFalse(workspace.isDirty());
     }
@@ -156,6 +157,8 @@ class EditWorkspaceTest {
         assertEquals(A, inverse.changes().get(0).after());
         assertEquals(C, inverse.changes().get(1).before());
         assertEquals(A, inverse.changes().get(1).after());
+        assertEquals(B, original.changeAt(P0).orElseThrow().after());
+        assertTrue(original.changeAt(new GridPoint(99, 0, 0)).isEmpty());
     }
 
     private static SchematicSnapshot snapshot(BlockStateRef first, BlockStateRef second) {

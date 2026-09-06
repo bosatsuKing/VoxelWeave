@@ -1,6 +1,8 @@
 package io.github.bosatsuking.voxelweave.workspace;
 
+import io.github.bosatsuking.voxelweave.domain.BlockStateRef;
 import io.github.bosatsuking.voxelweave.domain.ChangeSet;
+import io.github.bosatsuking.voxelweave.domain.GridPoint;
 import io.github.bosatsuking.voxelweave.domain.OperationTarget;
 import io.github.bosatsuking.voxelweave.domain.ReplacementRequest;
 import io.github.bosatsuking.voxelweave.domain.SchematicSnapshot;
@@ -48,11 +50,13 @@ public record EditWorkspace(
         return preview(BlockReplacementEngine.replace(committedSnapshot, target, request));
     }
 
-    /** Materializes the pending preview over committed state without changing workspace history. */
-    public SchematicSnapshot previewSnapshot() {
+    /** Reads the preview overlay without copying the full schematic snapshot. */
+    public BlockStateRef previewBlockAt(GridPoint position) {
+        Objects.requireNonNull(position);
         return pendingPreview
-                .map(changeSet -> ChangeSetApplier.apply(committedSnapshot, changeSet))
-                .orElse(committedSnapshot);
+                .flatMap(changeSet -> changeSet.changeAt(position))
+                .map(change -> change.after())
+                .orElseGet(() -> committedSnapshot.blockAt(position));
     }
 
     public EditWorkspace cancelPreview() {
