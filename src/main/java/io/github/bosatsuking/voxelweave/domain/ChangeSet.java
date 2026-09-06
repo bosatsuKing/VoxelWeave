@@ -30,4 +30,11 @@ public record ChangeSet(List<BlockChange> changes) {
     public boolean isEmpty() {
         return changes.isEmpty();
     }
+
+    /** Returns a deterministic change set that restores every block to its previous state. */
+    public ChangeSet inverse() {
+        return ChangeSet.of(changes.stream()
+                .map(change -> new BlockChange(change.position(), change.after(), change.before()))
+                .toList());
+    }
 }
