@@ -1,8 +1,11 @@
 package io.github.bosatsuking.voxelweave.workspace;
 
 import io.github.bosatsuking.voxelweave.domain.ChangeSet;
+import io.github.bosatsuking.voxelweave.domain.OperationTarget;
+import io.github.bosatsuking.voxelweave.domain.ReplacementRequest;
 import io.github.bosatsuking.voxelweave.domain.SchematicSnapshot;
 import io.github.bosatsuking.voxelweave.history.ChangeSetApplier;
+import io.github.bosatsuking.voxelweave.transform.BlockReplacementEngine;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -36,6 +39,13 @@ public record EditWorkspace(
     public EditWorkspace preview(ChangeSet changeSet) {
         Objects.requireNonNull(changeSet);
         return new EditWorkspace(sourceSnapshot, committedSnapshot, Optional.of(changeSet), undoStack, redoStack);
+    }
+
+    /** Evaluates bounded block replacement against committed state and stores only the resulting preview. */
+    public EditWorkspace previewReplacement(OperationTarget target, ReplacementRequest request) {
+        Objects.requireNonNull(target);
+        Objects.requireNonNull(request);
+        return preview(BlockReplacementEngine.replace(committedSnapshot, target, request));
     }
 
     /** Materializes the pending preview over committed state without changing workspace history. */
