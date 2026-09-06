@@ -4,6 +4,7 @@ import fi.dy.masa.litematica.data.DataManager;
 import fi.dy.masa.litematica.schematic.placement.SchematicPlacement;
 import fi.dy.masa.litematica.selection.AreaSelection;
 import fi.dy.masa.litematica.util.PositionUtils;
+import io.github.bosatsuking.voxelweave.domain.OperationTarget;
 import io.github.bosatsuking.voxelweave.integration.IntegrationState;
 import io.github.bosatsuking.voxelweave.integration.ReadOnlyIntegrationDiagnostic;
 import io.github.bosatsuking.voxelweave.integration.ReadOnlySchematicIntegration;
@@ -24,6 +25,7 @@ public final class LitematicaReadOnlyIntegration implements ReadOnlySchematicInt
         AreaSelection selection = DataManager.getSelectionManager().getCurrentSelection();
         boolean placementPresent = placement != null;
         boolean selectionPresent = selection != null;
+        OperationTarget target = OperationTarget.empty();
 
         IntegrationState state;
         if (!placementPresent) {
@@ -35,7 +37,8 @@ public final class LitematicaReadOnlyIntegration implements ReadOnlySchematicInt
         } else if (PositionUtils.getValidBoxes(selection).isEmpty()) {
             state = IntegrationState.SELECTION_INVALID;
         } else {
-            state = IntegrationState.READY;
+            target = LitematicaTargetMapping.snapshot(placement, selection);
+            state = target.worldRegions().isEmpty() ? IntegrationState.TARGET_EMPTY : IntegrationState.READY;
         }
 
         return new ReadOnlyIntegrationDiagnostic(
@@ -45,6 +48,7 @@ public final class LitematicaReadOnlyIntegration implements ReadOnlySchematicInt
                 true,
                 this.malilibVersion,
                 placementPresent,
-                selectionPresent);
+                selectionPresent,
+                target);
     }
 }
