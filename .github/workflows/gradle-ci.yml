@@ -1,0 +1,40 @@
+name: Gradle CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 25
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Make Gradle wrapper executable
+        run: chmod +x ./gradlew
+
+      - name: Run pure tests
+        run: ./gradlew test --stacktrace
+
+      - name: Build default configuration
+        run: ./gradlew build --stacktrace
+
+      - name: Build with Litematica runtime dependencies
+        run: ./gradlew build -PwithLitematica=true --stacktrace
