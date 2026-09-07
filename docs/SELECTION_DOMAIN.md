@@ -101,15 +101,26 @@ Pure domain/transformation/history tests do not import Minecraft, Litematica or
 Fabric types. Litematica snapshot capture is an integration boundary and requires
 a dev-client smoke test with the pinned dependencies.
 
-Verify at minimum:
+For code/build changes, run the automated gates:
 
 ```text
 ./gradlew test
 ./gradlew build
 ./gradlew build -PwithLitematica=true
+```
+
+For changes affecting Litematica capture/placement mapping or Minecraft renderer/UI
+behavior, and when required by the active acceptance criteria, also run a dev-client
+smoke test with the pinned dependencies:
+
+```text
 ./gradlew runClient -PwithLitematica=true
 ```
 
-Representative manual cases should include air, directional blocks, rotated or
+Pure-only changes do not require client launch unless they affect an integration
+contract. Record the observed behavior for each required case; client startup alone
+does not establish that an interactive or UI acceptance criterion passed.
+
+Representative capture/mapping cases should include air, directional blocks, rotated or
 mirrored placements, multiple selection boxes and deliberate placement overlap to
 confirm fail-closed behavior.
