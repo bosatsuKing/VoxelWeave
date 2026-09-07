@@ -34,7 +34,7 @@ SchematicSnapshotCapture
  ├─ OperationTarget
  └─ SchematicSnapshot
         ↓
-EditWorkspace / transformation layer
+EditWorkspace / analysis / transformation layers
 ```
 
 `LitematicaBlockSnapshotAdapter` reads the schematic state as Litematica presents it in world space. This preserves placement/subregion rotation and mirror in directional block states without leaking Minecraft/Litematica types into pure domain code.
@@ -56,7 +56,38 @@ Represents the user's current editing session:
 
 The workspace makes source-vs-preview-vs-committed state explicit. Preview reads are overlay lookups over the pending `ChangeSet`; they do not copy the full schematic for every read.
 
-### 3. Transformation layer
+### 3. Analysis layer
+
+Pure structural analysis over bounded immutable schematic data. Analysis does not mutate the snapshot and does not produce a `ChangeSet` by itself.
+
+Current Step 6A flow:
+
+```text
+SchematicSnapshot + OperationTarget
+        +
+BlockOccupancyPolicy
+        ↓
+SurfaceAnalyzer
+        ↓
+SurfaceAnalysis
+ ├─ SurfaceCell
+ │   ├─ known exposed faces
+ │   ├─ unknown faces
+ │   ├─ occupied-neighbor count
+ │   └─ component root
+ └─ SurfaceComponent
+     ├─ deterministic root
+     ├─ target-local size
+     └─ complete / incomplete connectivity
+```
+
+The analysis layer deliberately distinguishes **known empty** from **unknown/missing** neighbor data. A missing coordinate is never assumed to be air. This prevents selection/capture boundaries from being misclassified as exposed surface or tiny cleanup islands.
+
+`BlockOccupancyPolicy` is injected by the caller so pure analysis code does not hard-code Minecraft air identifiers or parse Minecraft/Litematica block-state representations.
+
+Higher-order descriptors such as curvature, edge strength, feature-preservation scores or surface normals may be added later on top of this topology contract.
+
+### 4. Transformation layer
 
 Pure or near-pure operations over bounded schematic data.
 
@@ -66,9 +97,9 @@ Initial transformation:
 ReplaceBlocks(selection, fromBlock, toBlock)
 ```
 
-Future transformations may include surface analysis, smoothing, dithering, noise cleanup and contour correction, but they should follow the same command/change-set model.
+Future transformations may include smoothing, dithering, noise cleanup and contour correction, but they should consume shared analysis results where appropriate and follow the same command/change-set model.
 
-### 4. History layer
+### 5. History layer
 
 Every committed edit produces a `ChangeSet` containing enough information to reverse the change.
 
@@ -86,7 +117,7 @@ CommittedChangeSet
 
 Avoid relying on re-running a non-deterministic transform to perform undo.
 
-### 5. Export / write boundary
+### 6. Export / write boundary
 
 Writing back to Litematica and exporting `.litematic` files are reliability boundaries and are not implemented yet.
 
@@ -108,7 +139,7 @@ If any pre-finalization step fails, retain the original file and report the fail
 
 Do not silently overwrite the only known-good schematic.
 
-### 6. UI layer
+### 7. UI layer
 
 UI coordinates intent and presents state. It should not implement transformation algorithms.
 
@@ -127,9 +158,10 @@ Large schematics are a primary use case.
 
 - No full-schematic scan every render tick.
 - Snapshot capture is explicit/on-demand and bounded to `OperationTarget.worldRegions()`.
-- Overlapping target regions must not duplicate coordinate reads.
+- Surface analysis is explicit/on-demand and must be cached by snapshot/workspace revision before any render-loop use.
+- Overlapping target regions must not duplicate coordinate reads or analyzed cells.
 - Cache integration lookups by chunk when practical.
-- Cache derived palette/statistics data with clear invalidation.
+- Cache derived palette/statistics/analysis data with clear invalidation.
 - Prefer compact change sets over copying the full schematic for every history entry.
 - If a transformation becomes expensive, separate computation from render/update scheduling while respecting Minecraft client thread safety.
 
@@ -142,6 +174,7 @@ Distinguish at least:
 - invalid selection
 - empty operation target
 - ambiguous/overlapping schematic capture
+- incomplete/unknown analysis boundary where an operation requires complete context
 - invalid transform parameters
 - transformation failure
 - write/export/IO failure
@@ -154,11 +187,11 @@ Recoverable errors should return to a usable workspace rather than crash the cli
 Direction should remain approximately:
 
 ```text
-ui/client → workspace → transform/history/export-domain
+ui/client → workspace → analysis/transform/history/export-domain
 integration → workspace/domain adapters
 ```
 
-Pure domain/transform/history code must not depend directly on Minecraft rendering classes or Litematica APIs.
+Pure domain/analysis/transform/history code must not depend directly on Minecraft rendering classes or Litematica APIs.
 
 ## Testing strategy
 
@@ -170,6 +203,9 @@ Pure domain/transform/history code must not depend directly on Minecraft renderi
 - change-set inversion
 - undo/redo ordering
 - preview isolation
+- surface exposed/interior/unknown semantics
+- surface connected-component sizing/completeness
+- overlap deduplication and deterministic analysis ordering
 - export policy and failure recovery logic when export is added
 
 ### Integration tests / smoke tests
@@ -190,3 +226,5 @@ Pure domain/transform/history code must not depend directly on Minecraft renderi
 - large bounded capture remains responsive enough for editing workflows
 - future preview rendering
 - future actual export/reopen with representative converted models
+
+See [surface analysis domain](SURFACE_ANALYSIS.md) for Step 6A topology and boundary semantics.

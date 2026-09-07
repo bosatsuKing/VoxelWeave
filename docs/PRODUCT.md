@@ -35,11 +35,14 @@ The repository currently contains the non-destructive editing foundation:
 - read-only capture of the bounded selected Litematica target into `SchematicSnapshot`;
 - deterministic bounded block replacement;
 - preview/commit separation inside the VoxelWeave workspace;
-- reversible `ChangeSet` history with undo/redo.
+- reversible `ChangeSet` history with undo/redo;
+- pure six-neighbor surface topology analysis with exposed/interior/unknown distinction and deterministic component sizing.
 
 The current `commit` is internal workspace state only. It does **not** write to the Litematica schematic or Minecraft world.
 
-The next product-facing capability after snapshot capture is surface/shape analysis, which will provide shared structural information for cleanup, smoothing and contour tools rather than applying one generic procedural shape style everywhere.
+The first surface-analysis slice intentionally reports structural evidence rather than editing geometry. Missing neighbor data remains unknown instead of being treated as air, and disconnected-component cleanup candidates are only considered safe when their connectivity is complete within the available snapshot/target context.
+
+The next shape-analysis work should add higher-order descriptors such as feature strength, edge/ridge preservation and curvature-like local measures before implementing smoothing or contour rewrites. This is intended to avoid forcing every model toward one recognizable procedural style.
 
 ## MVP
 
@@ -84,14 +87,16 @@ Tools should act on explicit selections or bounded schematic data, not on unrela
 ### Preserve creator intent
 Shape tools should remove conversion artifacts and repetitive procedural noise without forcing every build toward one recognizable smoothing, gradient or contour style. Large forms, important edges and intentional detail should be preservable independently from cleanup strength.
 
+Analysis should prefer uncertainty over destructive guessing: unknown capture-boundary data is not equivalent to exposed air, and incomplete components are not safe island-removal candidates.
+
 ### Stable
 A failed operation should degrade gracefully and preserve recoverable data. Ambiguous schematic input must fail closed instead of silently editing the wrong placement.
 
 ### Fast enough for builders
-Large builds are expected. Avoid designs that rescan the entire schematic every frame or copy large block arrays unnecessarily.
+Large builds are expected. Avoid designs that rescan the entire schematic every frame or copy large block arrays unnecessarily. Analysis should be explicit and cacheable by snapshot/workspace revision.
 
 ### Interoperable
-Litematica/MaLiLib integration should be isolated behind adapters so transformation logic remains independently testable and maintainable.
+Litematica/MaLiLib integration should be isolated behind adapters so transformation and analysis logic remain independently testable and maintainable.
 
 ## Success criteria for prototype → alpha
 
@@ -99,7 +104,8 @@ Litematica/MaLiLib integration should be isolated behind adapters so transformat
 - A real converted `.litematic` can be identified and captured through the supported workflow.
 - A user can select a region and preview/apply block replacement in VoxelWeave workspace state.
 - Undo/redo works across multiple VoxelWeave edits.
-- Surface analysis can distinguish at least exposed surface, interior, isolated/noisy blocks and protected structural features well enough to support later refinement tools.
+- Surface analysis can distinguish at least exposed surface, interior, isolated/noisy candidates and uncertain boundaries well enough to support later refinement tools.
+- Higher-order feature analysis can protect important structural detail before smoothing/contour operations are enabled.
 - Litematica write-back revalidates the source/target before mutation.
 - Exported output can be reopened successfully.
 - Simulated export failure does not destroy the source schematic.
