@@ -34,8 +34,23 @@ VoxelWeave does **not** aim to clone a proprietary converter. Its primary value 
 
 ## Status
 
-Step 2 adds immutable world-space selection/placement geometry to the Step 1
-optional Litematica/MaLiLib integration. Schematic editing is not implemented yet.
+The first pure editing vertical slice is complete, the read-only Litematica bridge reaches real schematic block data, and the pure shape-analysis foundation now includes conservative local feature descriptors.
+
+Implemented foundation:
+
+1. Fabric 26.1.2 client bootstrap and pinned optional Litematica/MaLiLib integration.
+2. Immutable world-space selection / placement geometry and `selection × placement` targeting.
+3. Deterministic bounded block replacement producing immutable `ChangeSet` values.
+4. Preview → commit workspace separation with reversible undo/redo.
+5. Read-only capture of the current bounded Litematica target into a world-space `SchematicSnapshot`.
+6. Pure six-neighbor surface analysis with exposed/interior/unknown topology and deterministic connected-component sizing.
+7. Pure feature-preservation descriptors for face, edge, corner, thin feature, tip, isolated, interior and unknown-boundary cells.
+
+The Step 5 capture includes air and non-air states inside the target, deduplicates overlapping target regions and reads the block state as Litematica presents it in world space. If another schematic placement or multiple selected-placement subregions overlap the same captured coordinate, capture fails closed instead of silently mixing ambiguous schematic-world data.
+
+Shape analysis does not mutate geometry. It records conservative structural evidence for later cleanup and smoothing: known exposed faces, unknown capture-boundary faces, occupied-neighbor counts, complete/incomplete 6-connected components, local feature kinds, discrete exposure direction and nearby surface context. Missing neighbor data is never silently treated as air.
+
+Still not implemented: Litematica schematic write-back, Minecraft preview rendering/UI, larger-neighborhood curvature/feature fitting, smoothing/cleanup/contour transforms, palette/gradient/pattern/dithering tools, and safe `.litematic` export/recovery.
 
 ## Initial MVP scope
 
@@ -56,7 +71,12 @@ optional Litematica/MaLiLib integration. Schematic editing is not implemented ye
 
 ## Development handoff
 
-See [AGENTS.md](AGENTS.md) for implementation rules and [docs/PRODUCT.md](docs/PRODUCT.md) for the current product definition.
+See [AGENTS.md](AGENTS.md) for implementation rules, [docs/PRODUCT.md](docs/PRODUCT.md) for the product definition, and [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for package boundaries.
+
+Domain semantics:
+
+- [selection and snapshot domain](docs/SELECTION_DOMAIN.md)
+- [surface analysis domain](docs/SURFACE_ANALYSIS.md)
 
 ## Development
 
@@ -82,5 +102,12 @@ Press `V` in a world to show the read-only integration diagnostic. It reports de
 selected-placement presence, current-selection presence and whether their world-space intersection
 is non-empty. It does not modify schematics, worlds or configuration.
 
-Pure domain and boundary-conversion tests run with `./gradlew test` without starting Minecraft.
-See [selection domain](docs/SELECTION_DOMAIN.md) for coordinate and snapshot semantics.
+When the integration is ready, `ReadOnlySchematicIntegration.captureSnapshot()` exposes the current bounded target and immutable `SchematicSnapshot` to the VoxelWeave editing workspace. Capture is read-only and is not automatically run every render tick.
+
+Pure domain, analysis and transformation/history tests run with:
+
+```text
+./gradlew test
+```
+
+Pull requests also run JDK 25 GitHub Actions checks for tests, the default build and the Litematica-enabled build. Interactive Minecraft/Litematica smoke verification remains manual.
