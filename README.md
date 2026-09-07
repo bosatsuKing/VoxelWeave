@@ -34,7 +34,7 @@ VoxelWeave does **not** aim to clone a proprietary converter. Its primary value 
 
 ## Status
 
-The first pure editing vertical slice is complete, the read-only Litematica bridge reaches real schematic block data, and the pure shape-analysis foundation now includes conservative local feature descriptors.
+The first pure editing vertical slice is complete, the read-only Litematica bridge reaches real schematic block data, and shape analysis now supports conservative disconnected-island cleanup planning.
 
 Implemented foundation:
 
@@ -45,12 +45,15 @@ Implemented foundation:
 5. Read-only capture of the current bounded Litematica target into a world-space `SchematicSnapshot`.
 6. Pure six-neighbor surface analysis with exposed/interior/unknown topology and deterministic connected-component sizing.
 7. Pure feature-preservation descriptors for face, edge, corner, thin feature, tip, isolated, interior and unknown-boundary cells.
+8. Pure disconnected-island cleanup planning with size limits, whole-component feature protection and stale-analysis rejection, producing an immutable `ChangeSet` for the existing workspace.
 
 The Step 5 capture includes air and non-air states inside the target, deduplicates overlapping target regions and reads the block state as Litematica presents it in world space. If another schematic placement or multiple selected-placement subregions overlap the same captured coordinate, capture fails closed instead of silently mixing ambiguous schematic-world data.
 
 Shape analysis does not mutate geometry. It records conservative structural evidence for later cleanup and smoothing: known exposed faces, unknown capture-boundary faces, occupied-neighbor counts, complete/incomplete 6-connected components, local feature kinds, discrete exposure direction and nearby surface context. Missing neighbor data is never silently treated as air.
 
-Still not implemented: Litematica schematic write-back, Minecraft preview rendering/UI, larger-neighborhood curvature/feature fitting, smoothing/cleanup/contour transforms, palette/gradient/pattern/dithering tools, and safe `.litematic` export/recovery.
+Cleanup is limited to fully-known disconnected components within the analyzed target. Callers explicitly supply replacement state and protected feature kinds. Incomplete/unknown components are preserved; no schematic or world write occurs.
+
+Still not implemented: Litematica schematic write-back, Minecraft preview rendering/UI, larger-neighborhood curvature/feature fitting, connected-surface/spike cleanup, smoothing/relaxation/contour transforms, palette/gradient/pattern/dithering tools, and safe `.litematic` export/recovery.
 
 ## Initial MVP scope
 

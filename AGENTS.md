@@ -91,7 +91,7 @@ Completed/merged foundation:
 Current shape-analysis sequence:
 
 8. Add local feature-preservation descriptors for face/edge/corner/thin-feature/tip/unknown-boundary evidence.
-9. Add the first shape refinement tools, beginning with conservative cleanup/island handling before broad smoothing.
+9. Conservative disconnected-island cleanup planning is implemented as a pure `ChangeSet` planner. Reuse existing topology/features, require source-bound analysis and preserve incomplete/unknown or protected components as a whole. Connected-surface/spike cleanup remains future work.
 10. Add feature-preserving smoothing/relaxation and contour correction; add larger-neighborhood curvature descriptors only where needed by preservation policy.
 11. Add palette/color tools: palette mapping, gradients, patterns and dithering.
 12. Add Minecraft preview rendering/UI over pending `ChangeSet` data.

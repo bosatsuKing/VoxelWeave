@@ -1,5 +1,7 @@
 package io.github.bosatsuking.voxelweave.workspace;
 
+import io.github.bosatsuking.voxelweave.analysis.SurfaceAnalysis;
+import io.github.bosatsuking.voxelweave.analysis.SurfaceFeatureAnalysis;
 import io.github.bosatsuking.voxelweave.domain.BlockStateRef;
 import io.github.bosatsuking.voxelweave.domain.ChangeSet;
 import io.github.bosatsuking.voxelweave.domain.GridPoint;
@@ -8,6 +10,8 @@ import io.github.bosatsuking.voxelweave.domain.ReplacementRequest;
 import io.github.bosatsuking.voxelweave.domain.SchematicSnapshot;
 import io.github.bosatsuking.voxelweave.history.ChangeSetApplier;
 import io.github.bosatsuking.voxelweave.transform.BlockReplacementEngine;
+import io.github.bosatsuking.voxelweave.transform.DisconnectedIslandCleanupPlanner;
+import io.github.bosatsuking.voxelweave.transform.IslandCleanupRequest;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -37,7 +41,9 @@ public record EditWorkspace(
         return new EditWorkspace(sourceSnapshot, sourceSnapshot, Optional.empty(), List.of(), List.of());
     }
 
-    /** Replaces the pending preview without mutating source or committed state. */
+    /** Replaces the pending preview without mutating source or committed state.
+     * For analysis-driven island cleanup, use {@link #previewIslandCleanup} to validate current context.
+     */
     public EditWorkspace preview(ChangeSet changeSet) {
         Objects.requireNonNull(changeSet);
         return new EditWorkspace(sourceSnapshot, committedSnapshot, Optional.of(changeSet), undoStack, redoStack);
@@ -48,6 +54,15 @@ public record EditWorkspace(
         Objects.requireNonNull(target);
         Objects.requireNonNull(request);
         return preview(BlockReplacementEngine.replace(committedSnapshot, target, request));
+    }
+
+    /** Plans and stores cleanup against this workspace's committed snapshot in one immutable operation.
+     * Rejects stale surface/features before replacing any pending preview. The returned workspace
+     * keeps the same committed snapshot until commitPreview applies this plan.
+     */
+    public EditWorkspace previewIslandCleanup(SurfaceAnalysis surface, SurfaceFeatureAnalysis features,
+                                              IslandCleanupRequest request) {
+        return preview(DisconnectedIslandCleanupPlanner.plan(committedSnapshot, surface, features, request));
     }
 
     /** Reads the preview overlay without copying the full schematic snapshot. */

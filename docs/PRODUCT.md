@@ -37,13 +37,14 @@ The repository currently contains the non-destructive editing and shape-analysis
 - preview/commit separation inside the VoxelWeave workspace;
 - reversible `ChangeSet` history with undo/redo;
 - pure six-neighbor surface topology analysis with exposed/interior/unknown distinction and deterministic component sizing;
-- pure local feature descriptors that distinguish broad faces, edges, corners, thin geometry, tips, isolated cells, interiors and unknown boundaries.
+- pure local feature descriptors that distinguish broad faces, edges, corners, thin geometry, tips, isolated cells, interiors and unknown boundaries;
+- conservative disconnected-island cleanup `ChangeSet` planning with explicit size/replacement policy, whole-component feature protection and source-bound analysis validation.
 
 The current `commit` is internal workspace state only. It does **not** write to the Litematica schematic or Minecraft world.
 
 Shape analysis intentionally reports structural evidence before editing geometry. Missing neighbor data remains unknown instead of being treated as air. Disconnected-component cleanup candidates are only considered safe when connectivity is complete, and local feature descriptors keep unknown-boundary cells out of confident face/edge/corner/tip classes.
 
-The next shape-refinement work should consume these descriptors so broad conversion noise can be treated differently from deliberate ridges, corners, thin ornament and spires. Larger-neighborhood curvature fitting may be added where it materially improves preservation decisions, but one generic smoothing style must not become the default visual signature of VoxelWeave.
+The first shape-refinement planner consumes these descriptors and preserves an entire component if any cell has a protected feature kind. Only fully-known components within the configured size limit are candidates. Connected-surface cleanup, spike shortening, smoothing, relaxation and contour correction remain unimplemented. Larger-neighborhood curvature fitting may be added where it materially improves preservation decisions, but one generic smoothing style must not become the default visual signature of VoxelWeave.
 
 ## MVP
 

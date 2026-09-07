@@ -110,7 +110,23 @@ Initial transformation:
 ReplaceBlocks(selection, fromBlock, toBlock)
 ```
 
-Future transformations may include smoothing, dithering, noise cleanup and contour correction, but shape transforms should consume shared analysis results where appropriate and follow the same command/change-set model.
+`DisconnectedIslandCleanupPlanner` consumes a snapshot, its `SurfaceAnalysis`, the corresponding
+`SurfaceFeatureAnalysis` and an `IslandCleanupRequest`. It reuses `smallIslandCandidates` and feature
+evidence without new neighbor traversal. Unknown/incomplete components and any component containing
+a protected feature are preserved as a whole. Editing sessions use
+`EditWorkspace.previewIslandCleanup(surface, features, request)` to plan against the current
+`committedSnapshot` and store the resulting preview in one immutable workspace operation.
+The low-level planner's `ChangeSet` carries no provenance and must not be cached and replayed
+through generic `preview(...)` after workspace changes; workspace commit/history behavior is unchanged.
+
+Analyzer-produced results retain private references to their immutable sources. Cleanup requires the
+exact snapshot instance and the exact surface instance from which the features were computed.
+This constant-time provenance check includes capture halo changes and rejects unbound/manual evidence.
+It avoids a second full-snapshot scan or workspace revision redesign; equal snapshot copies require
+fresh analysis. See [surface analysis domain](SURFACE_ANALYSIS.md) for lifetime and target semantics.
+
+Future transformations may include smoothing, dithering, connected-surface cleanup and contour correction,
+but shape transforms should consume shared analysis results and follow the same command/change-set model.
 
 ### 5. History layer
 

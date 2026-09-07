@@ -9,8 +9,16 @@ import java.util.Optional;
 import java.util.Set;
 
 /** Immutable deterministic collection of higher-order local feature descriptors. */
-public record SurfaceFeatureAnalysis(List<SurfaceFeatureDescriptor> descriptors) {
-    public SurfaceFeatureAnalysis {
+public final class SurfaceFeatureAnalysis {
+    private final List<SurfaceFeatureDescriptor> descriptors;
+    private final SurfaceAnalysis sourceAnalysis;
+
+    /** Unbound evidence for inspection; not eligible for cleanup planning. */
+    public SurfaceFeatureAnalysis(List<SurfaceFeatureDescriptor> descriptors) {
+        this(descriptors, null);
+    }
+
+    private SurfaceFeatureAnalysis(List<SurfaceFeatureDescriptor> descriptors, SurfaceAnalysis sourceAnalysis) {
         Objects.requireNonNull(descriptors);
         descriptors = descriptors.stream().sorted().toList();
 
@@ -20,6 +28,31 @@ public record SurfaceFeatureAnalysis(List<SurfaceFeatureDescriptor> descriptors)
                 throw new IllegalArgumentException("Duplicate feature descriptor position: " + descriptor.position());
             }
         }
+        this.descriptors = descriptors;
+        this.sourceAnalysis = sourceAnalysis;
+    }
+
+    static SurfaceFeatureAnalysis fromSurface(SurfaceAnalysis source, List<SurfaceFeatureDescriptor> descriptors) {
+        return new SurfaceFeatureAnalysis(descriptors, Objects.requireNonNull(source));
+    }
+
+    public boolean isFrom(SurfaceAnalysis analysis) {
+        return sourceAnalysis != null && sourceAnalysis == analysis;
+    }
+
+    public List<SurfaceFeatureDescriptor> descriptors() {
+        return descriptors;
+    }
+
+    /** Evidence equality does not grant source compatibility; use isFrom for that. */
+    @Override
+    public boolean equals(Object other) {
+        return other instanceof SurfaceFeatureAnalysis analysis && descriptors.equals(analysis.descriptors);
+    }
+
+    @Override
+    public int hashCode() {
+        return descriptors.hashCode();
     }
 
     public static SurfaceFeatureAnalysis empty() {
