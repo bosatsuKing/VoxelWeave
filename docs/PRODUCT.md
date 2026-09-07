@@ -28,7 +28,7 @@ A Minecraft builder who:
 
 ## Current implementation state
 
-The repository currently contains the non-destructive editing foundation:
+The repository currently contains the non-destructive editing and shape-analysis foundation:
 
 - pinned Fabric / Litematica / MaLiLib integration for Minecraft 26.1.2;
 - immutable world-space selection and placement targeting;
@@ -36,13 +36,14 @@ The repository currently contains the non-destructive editing foundation:
 - deterministic bounded block replacement;
 - preview/commit separation inside the VoxelWeave workspace;
 - reversible `ChangeSet` history with undo/redo;
-- pure six-neighbor surface topology analysis with exposed/interior/unknown distinction and deterministic component sizing.
+- pure six-neighbor surface topology analysis with exposed/interior/unknown distinction and deterministic component sizing;
+- pure local feature descriptors that distinguish broad faces, edges, corners, thin geometry, tips, isolated cells, interiors and unknown boundaries.
 
 The current `commit` is internal workspace state only. It does **not** write to the Litematica schematic or Minecraft world.
 
-The first surface-analysis slice intentionally reports structural evidence rather than editing geometry. Missing neighbor data remains unknown instead of being treated as air, and disconnected-component cleanup candidates are only considered safe when their connectivity is complete within the available snapshot/target context.
+Shape analysis intentionally reports structural evidence before editing geometry. Missing neighbor data remains unknown instead of being treated as air. Disconnected-component cleanup candidates are only considered safe when connectivity is complete, and local feature descriptors keep unknown-boundary cells out of confident face/edge/corner/tip classes.
 
-The next shape-analysis work should add higher-order descriptors such as feature strength, edge/ridge preservation and curvature-like local measures before implementing smoothing or contour rewrites. This is intended to avoid forcing every model toward one recognizable procedural style.
+The next shape-refinement work should consume these descriptors so broad conversion noise can be treated differently from deliberate ridges, corners, thin ornament and spires. Larger-neighborhood curvature fitting may be added where it materially improves preservation decisions, but one generic smoothing style must not become the default visual signature of VoxelWeave.
 
 ## MVP
 
@@ -85,9 +86,9 @@ A user should be able to see the impact of a substantial edit before it is commi
 Tools should act on explicit selections or bounded schematic data, not on unrelated world state.
 
 ### Preserve creator intent
-Shape tools should remove conversion artifacts and repetitive procedural noise without forcing every build toward one recognizable smoothing, gradient or contour style. Large forms, important edges and intentional detail should be preservable independently from cleanup strength.
+Shape tools should remove conversion artifacts and repetitive procedural noise without forcing every build toward one recognizable smoothing, gradient or contour style. Large forms, important edges, thin features and intentional detail should be preservable independently from cleanup strength.
 
-Analysis should prefer uncertainty over destructive guessing: unknown capture-boundary data is not equivalent to exposed air, and incomplete components are not safe island-removal candidates.
+Analysis should prefer uncertainty over destructive guessing: unknown capture-boundary data is not equivalent to exposed air, incomplete components are not safe island-removal candidates, and uncertain local geometry is not promoted to a confident feature class.
 
 ### Stable
 A failed operation should degrade gracefully and preserve recoverable data. Ambiguous schematic input must fail closed instead of silently editing the wrong placement.
@@ -104,8 +105,9 @@ Litematica/MaLiLib integration should be isolated behind adapters so transformat
 - A real converted `.litematic` can be identified and captured through the supported workflow.
 - A user can select a region and preview/apply block replacement in VoxelWeave workspace state.
 - Undo/redo works across multiple VoxelWeave edits.
-- Surface analysis can distinguish at least exposed surface, interior, isolated/noisy candidates and uncertain boundaries well enough to support later refinement tools.
-- Higher-order feature analysis can protect important structural detail before smoothing/contour operations are enabled.
+- Surface analysis can distinguish exposed surface, interior, isolated/noisy candidates and uncertain boundaries.
+- Feature analysis can distinguish broad faces from edges, corners, tips and thin features well enough to support preservation-aware refinement.
+- Shape refinement can remove obvious conversion artifacts without flattening protected structural detail.
 - Litematica write-back revalidates the source/target before mutation.
 - Exported output can be reopened successfully.
 - Simulated export failure does not destroy the source schematic.

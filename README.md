@@ -34,7 +34,7 @@ VoxelWeave does **not** aim to clone a proprietary converter. Its primary value 
 
 ## Status
 
-The first pure editing vertical slice is complete, the read-only Litematica bridge reaches real schematic block data, and the first pure surface-topology analysis layer is implemented.
+The first pure editing vertical slice is complete, the read-only Litematica bridge reaches real schematic block data, and the pure shape-analysis foundation now includes conservative local feature descriptors.
 
 Implemented foundation:
 
@@ -44,12 +44,13 @@ Implemented foundation:
 4. Preview → commit workspace separation with reversible undo/redo.
 5. Read-only capture of the current bounded Litematica target into a world-space `SchematicSnapshot`.
 6. Pure six-neighbor surface analysis with exposed/interior/unknown topology and deterministic connected-component sizing.
+7. Pure feature-preservation descriptors for face, edge, corner, thin feature, tip, isolated, interior and unknown-boundary cells.
 
 The Step 5 capture includes air and non-air states inside the target, deduplicates overlapping target regions and reads the block state as Litematica presents it in world space. If another schematic placement or multiple selected-placement subregions overlap the same captured coordinate, capture fails closed instead of silently mixing ambiguous schematic-world data.
 
-Step 6A does not mutate geometry. It records conservative structural evidence for later cleanup and smoothing: known exposed faces, unknown capture-boundary faces, occupied-neighbor counts and complete/incomplete 6-connected components. Missing neighbor data is never silently treated as air.
+Shape analysis does not mutate geometry. It records conservative structural evidence for later cleanup and smoothing: known exposed faces, unknown capture-boundary faces, occupied-neighbor counts, complete/incomplete 6-connected components, local feature kinds, discrete exposure direction and nearby surface context. Missing neighbor data is never silently treated as air.
 
-Still not implemented: Litematica schematic write-back, Minecraft preview rendering/UI, higher-order shape descriptors such as curvature/feature strength, smoothing/cleanup/contour transforms, palette/gradient/pattern/dithering tools, and safe `.litematic` export/recovery.
+Still not implemented: Litematica schematic write-back, Minecraft preview rendering/UI, larger-neighborhood curvature/feature fitting, smoothing/cleanup/contour transforms, palette/gradient/pattern/dithering tools, and safe `.litematic` export/recovery.
 
 ## Initial MVP scope
 
@@ -109,8 +110,4 @@ Pure domain, analysis and transformation/history tests run with:
 ./gradlew test
 ```
 
-Before merging Litematica integration changes, also verify:
-
-```text
-./gradlew build -PwithLitematica=true
-```
+Pull requests also run JDK 25 GitHub Actions checks for tests, the default build and the Litematica-enabled build. Interactive Minecraft/Litematica smoke verification remains manual.
