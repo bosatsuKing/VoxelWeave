@@ -60,7 +60,7 @@ The workspace makes source-vs-preview-vs-committed state explicit. Preview reads
 
 Pure structural analysis over bounded immutable schematic data. Analysis does not mutate the snapshot and does not produce a `ChangeSet` by itself.
 
-Current Step 6A flow:
+Current flow:
 
 ```text
 SchematicSnapshot + OperationTarget
@@ -79,13 +79,26 @@ SurfaceAnalysis
      ├─ deterministic root
      ├─ target-local size
      └─ complete / incomplete connectivity
+        ↓
+SurfaceFeatureAnalyzer
+        ↓
+SurfaceFeatureAnalysis
+ └─ SurfaceFeatureDescriptor
+     ├─ feature kind
+     ├─ discrete exposure vector
+     ├─ exposed-axis count
+     ├─ opposite-exposure pairs
+     ├─ nearby surface-neighbor count
+     └─ component-completeness context
 ```
 
-The analysis layer deliberately distinguishes **known empty** from **unknown/missing** neighbor data. A missing coordinate is never assumed to be air. This prevents selection/capture boundaries from being misclassified as exposed surface or tiny cleanup islands.
+Step 6A deliberately distinguishes **known empty** from **unknown/missing** neighbor data. A missing coordinate is never assumed to be air. This prevents selection/capture boundaries from being misclassified as exposed surface or tiny cleanup islands.
 
 `BlockOccupancyPolicy` is injected by the caller so pure analysis code does not hard-code Minecraft air identifiers or parse Minecraft/Litematica block-state representations.
 
-Higher-order descriptors such as curvature, edge strength, feature-preservation scores or surface normals may be added later on top of this topology contract.
+Step 6B adds local feature descriptors for `INTERIOR`, `FACE`, `EDGE`, `CORNER`, `THIN_FEATURE`, `TIP`, `ISOLATED` and `UNKNOWN_BOUNDARY`. Unknown-boundary classification has precedence over confident geometry classes. These descriptors are evidence for future preservation policy; they are not editing commands and do not encode smoothing strength.
+
+The Step 6B exposure vector is discrete/sign-normalized local evidence, not a floating-point fitted normal. Larger-neighborhood curvature or continuous normal fitting can be added later without changing the Step 6A topology contract.
 
 ### 4. Transformation layer
 
@@ -97,7 +110,7 @@ Initial transformation:
 ReplaceBlocks(selection, fromBlock, toBlock)
 ```
 
-Future transformations may include smoothing, dithering, noise cleanup and contour correction, but they should consume shared analysis results where appropriate and follow the same command/change-set model.
+Future transformations may include smoothing, dithering, noise cleanup and contour correction, but shape transforms should consume shared analysis results where appropriate and follow the same command/change-set model.
 
 ### 5. History layer
 
@@ -158,7 +171,7 @@ Large schematics are a primary use case.
 
 - No full-schematic scan every render tick.
 - Snapshot capture is explicit/on-demand and bounded to `OperationTarget.worldRegions()`.
-- Surface analysis is explicit/on-demand and must be cached by snapshot/workspace revision before any render-loop use.
+- Surface and feature analysis are explicit/on-demand and should be cached by snapshot/workspace revision before any render-loop use.
 - Overlapping target regions must not duplicate coordinate reads or analyzed cells.
 - Cache integration lookups by chunk when practical.
 - Cache derived palette/statistics/analysis data with clear invalidation.
@@ -205,6 +218,8 @@ Pure domain/analysis/transform/history code must not depend directly on Minecraf
 - preview isolation
 - surface exposed/interior/unknown semantics
 - surface connected-component sizing/completeness
+- local feature-kind classification and precedence
+- discrete exposure vectors / axis and opposite-face evidence
 - overlap deduplication and deterministic analysis ordering
 - export policy and failure recovery logic when export is added
 
@@ -227,4 +242,6 @@ Pure domain/analysis/transform/history code must not depend directly on Minecraf
 - future preview rendering
 - future actual export/reopen with representative converted models
 
-See [surface analysis domain](SURFACE_ANALYSIS.md) for Step 6A topology and boundary semantics.
+Pull requests run JDK 25 GitHub Actions checks for pure tests, the default build and the Litematica-enabled build. Interactive Minecraft/Litematica smoke checks remain manual.
+
+See [surface analysis domain](SURFACE_ANALYSIS.md) for topology, feature-descriptor and boundary semantics.
