@@ -209,10 +209,22 @@ with old workspace context. No global cache or persisted identifier is introduce
 ### Existing workspace flow
 
 ```text
-snapshot + surface + features + explicit cleanup request
-    → planner → ChangeSet → EditWorkspace.preview(...)
+current workspace + surface + features + explicit cleanup request
+    → EditWorkspace.previewIslandCleanup(...)
+    → plan against committedSnapshot → store ChangeSet preview
     → existing workspace commit / undo / redo
 ```
+
+Use the dedicated workspace operation for cleanup previews. It validates analysis against the
+current `committedSnapshot` before replacing a pending preview, including when planning would
+produce no changes. An intervening commit or undo/redo requires fresh analysis of the resulting
+snapshot. For example, adding a neighbor invalidates an earlier isolated-component analysis even
+when the component's own block states have not changed. Rejection leaves the workspace unchanged.
+
+The low-level planner still returns an ordinary `ChangeSet` for inspection and pure tests; that
+value does not retain analysis provenance. Do not cache it and replay it through generic
+`preview(...)` on another workspace state. The dedicated operation keeps planning and preview
+on the same immutable workspace; commit consumes that preview and undo/redo reuse existing history.
 
 Planning does not apply changes. Workspace commit affects immutable workspace state only, not
 Litematica or Minecraft. UI, write-back, export, smoothing, relaxation, connected-surface cleanup,

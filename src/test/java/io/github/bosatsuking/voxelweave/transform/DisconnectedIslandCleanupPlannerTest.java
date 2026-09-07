@@ -44,7 +44,10 @@ class DisconnectedIslandCleanupPlannerTest {
 
         assertEquals(List.of(new BlockChange(p(0, 0, 0), SOLID, EMPTY)), changes.changes());
         assertEquals(SOLID, snapshot.blockAt(p(0, 0, 0)));
-        EditWorkspace preview = EditWorkspace.start(snapshot).preview(changes);
+        SurfaceAnalysis surface = analyze(snapshot, target(AREA));
+        EditWorkspace preview = EditWorkspace.start(snapshot)
+                .previewIslandCleanup(surface, SurfaceFeatureAnalyzer.analyze(surface), request(1));
+        assertEquals(changes, preview.pendingPreview().orElseThrow());
         assertSame(snapshot, preview.committedSnapshot());
         assertEquals(EMPTY, preview.previewBlockAt(p(0, 0, 0)));
         EditWorkspace committed = preview.commitPreview();
@@ -52,6 +55,66 @@ class DisconnectedIslandCleanupPlannerTest {
         EditWorkspace undone = committed.undo();
         assertEquals(snapshot, undone.committedSnapshot());
         assertEquals(committed.committedSnapshot(), undone.redo().committedSnapshot());
+    }
+
+    @Test
+    void workspaceRejectsOldCleanupAfterNeighborCommitAndAcceptsFreshAnalysis() {
+        SchematicSnapshot original = snapshot(p(0, 0, 0));
+        SurfaceAnalysis surface = analyze(original, target(AREA));
+        SurfaceFeatureAnalysis features = SurfaceFeatureAnalyzer.analyze(surface);
+        ChangeSet oldCleanup = DisconnectedIslandCleanupPlanner.plan(original, surface, features, request(1));
+        assertEquals(1, oldCleanup.changes().size());
+        EditWorkspace current = EditWorkspace.start(original)
+                .preview(ChangeSet.of(List.of(new BlockChange(p(1, 0, 0), EMPTY, SOLID))))
+                .commitPreview();
+
+        IllegalArgumentException stale = assertThrows(IllegalArgumentException.class,
+                () -> current.previewIslandCleanup(surface, features, request(1)));
+        assertTrue(stale.getMessage().contains("current snapshot"));
+        assertFalse(current.hasPreview());
+        assertEquals(1, current.undoStack().size());
+        assertEquals(SOLID, current.committedSnapshot().blockAt(p(0, 0, 0)));
+        assertEquals(SOLID, current.committedSnapshot().blockAt(p(1, 0, 0)));
+        assertEquals(EMPTY, original.blockAt(p(1, 0, 0)));
+
+        SurfaceAnalysis fresh = analyze(current.committedSnapshot(), target(AREA));
+        EditWorkspace preview = current.previewIslandCleanup(fresh, SurfaceFeatureAnalyzer.analyze(fresh), request(1));
+        assertTrue(preview.pendingPreview().orElseThrow().isEmpty());
+        EditWorkspace committed = preview.commitPreview();
+        assertSame(current.committedSnapshot(), committed.committedSnapshot());
+        assertEquals(current.undoStack(), committed.undoStack());
+    }
+
+    @Test
+    void staleCleanupRejectionPreservesPendingPreviewAndRedoHistory() {
+        SchematicSnapshot original = snapshot(p(0, 0, 0));
+        SurfaceAnalysis oldSurface = analyze(original, target(AREA));
+        SurfaceFeatureAnalysis oldFeatures = SurfaceFeatureAnalyzer.analyze(oldSurface);
+        EditWorkspace undone = EditWorkspace.start(original)
+                .preview(ChangeSet.of(List.of(new BlockChange(p(1, 0, 0), EMPTY, SOLID))))
+                .commitPreview().undo();
+        assertEquals(original, undone.committedSnapshot());
+        assertNotSame(original, undone.committedSnapshot());
+        ChangeSet pending = ChangeSet.of(List.of(new BlockChange(p(0, 0, 0), SOLID, EMPTY)));
+        EditWorkspace current = undone.preview(pending);
+
+        assertThrows(IllegalArgumentException.class,
+                () -> current.previewIslandCleanup(oldSurface, oldFeatures, request(1)));
+        SurfaceAnalysis fresh = analyze(current.committedSnapshot(), target(AREA));
+        assertThrows(IllegalArgumentException.class,
+                () -> current.previewIslandCleanup(fresh, oldFeatures, request(1)));
+        assertSame(pending, current.pendingPreview().orElseThrow());
+        assertEquals(undone.undoStack(), current.undoStack());
+        assertEquals(undone.redoStack(), current.redoStack());
+
+        EditWorkspace preview = current.previewIslandCleanup(fresh, SurfaceFeatureAnalyzer.analyze(fresh), request(1));
+        assertSame(current.committedSnapshot(), preview.committedSnapshot());
+        assertEquals(current.redoStack(), preview.redoStack());
+        assertEquals(pending, preview.pendingPreview().orElseThrow());
+        EditWorkspace committed = preview.commitPreview();
+        assertFalse(committed.canRedo());
+        assertEquals(EMPTY, committed.committedSnapshot().blockAt(p(0, 0, 0)));
+        assertEquals(original, committed.undo().committedSnapshot());
     }
 
     @Test

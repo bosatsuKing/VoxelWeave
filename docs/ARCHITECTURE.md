@@ -113,8 +113,11 @@ ReplaceBlocks(selection, fromBlock, toBlock)
 `DisconnectedIslandCleanupPlanner` consumes a snapshot, its `SurfaceAnalysis`, the corresponding
 `SurfaceFeatureAnalysis` and an `IslandCleanupRequest`. It reuses `smallIslandCandidates` and feature
 evidence without new neighbor traversal. Unknown/incomplete components and any component containing
-a protected feature are preserved as a whole. It returns only a `ChangeSet`, usable directly through
-`EditWorkspace.preview(...)`; workspace commit/history behavior is unchanged.
+a protected feature are preserved as a whole. Editing sessions use
+`EditWorkspace.previewIslandCleanup(surface, features, request)` to plan against the current
+`committedSnapshot` and store the resulting preview in one immutable workspace operation.
+The low-level planner's `ChangeSet` carries no provenance and must not be cached and replayed
+through generic `preview(...)` after workspace changes; workspace commit/history behavior is unchanged.
 
 Analyzer-produced results retain private references to their immutable sources. Cleanup requires the
 exact snapshot instance and the exact surface instance from which the features were computed.

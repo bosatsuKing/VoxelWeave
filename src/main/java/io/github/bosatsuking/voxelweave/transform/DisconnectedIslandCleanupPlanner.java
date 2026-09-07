@@ -15,7 +15,10 @@ import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 
-/** Plans bounded island cleanup only. Does not traverse neighbors or apply any changes. */
+/** Plans bounded island cleanup only. Does not traverse neighbors or apply any changes.
+ * The returned ChangeSet carries no analysis provenance. Editing sessions must plan and preview
+ * together through EditWorkspace.previewIslandCleanup rather than cache and replay this output.
+ */
 public final class DisconnectedIslandCleanupPlanner {
     private DisconnectedIslandCleanupPlanner() { }
 
