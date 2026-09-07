@@ -72,6 +72,7 @@ public record SurfaceAnalysis(List<SurfaceCell> cells, List<SurfaceComponent> co
     }
 
     public List<SurfaceComponent> smallIslandCandidates(int maxSize) {
+        if (maxSize <= 0) throw new IllegalArgumentException("maxSize must be positive");
         return components.stream().filter(component -> component.isSmallIslandCandidate(maxSize)).toList();
     }
 }
