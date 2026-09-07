@@ -30,7 +30,7 @@ public final class SurfaceAnalyzer {
         Objects.requireNonNull(occupancy);
 
         List<Region> regions = target.worldRegions();
-        if (regions.isEmpty()) return SurfaceAnalysis.empty();
+        if (regions.isEmpty()) return SurfaceAnalysis.fromSnapshot(snapshot, List.of(), List.of());
 
         TreeMap<GridPoint, BlockStateRef> occupiedInsideTarget = new TreeMap<>();
         for (Map.Entry<GridPoint, BlockStateRef> entry : snapshot.blocks().entrySet()) {
@@ -38,7 +38,7 @@ public final class SurfaceAnalyzer {
                 occupiedInsideTarget.put(entry.getKey(), entry.getValue());
             }
         }
-        if (occupiedInsideTarget.isEmpty()) return SurfaceAnalysis.empty();
+        if (occupiedInsideTarget.isEmpty()) return SurfaceAnalysis.fromSnapshot(snapshot, List.of(), List.of());
 
         ComponentResult componentResult = buildComponents(
                 snapshot, regions, occupiedInsideTarget, occupancy);
@@ -76,7 +76,7 @@ public final class SurfaceAnalyzer {
                     componentResult.rootByPosition().get(position)));
         }
 
-        return new SurfaceAnalysis(cells, componentResult.components());
+        return SurfaceAnalysis.fromSnapshot(snapshot, cells, componentResult.components());
     }
 
     private static ComponentResult buildComponents(

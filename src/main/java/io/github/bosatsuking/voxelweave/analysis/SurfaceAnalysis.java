@@ -1,6 +1,7 @@
 package io.github.bosatsuking.voxelweave.analysis;
 
 import io.github.bosatsuking.voxelweave.domain.GridPoint;
+import io.github.bosatsuking.voxelweave.domain.SchematicSnapshot;
 
 import java.util.HashSet;
 import java.util.List;
@@ -9,8 +10,18 @@ import java.util.Optional;
 import java.util.Set;
 
 /** Immutable deterministic result of one bounded surface-analysis pass. */
-public record SurfaceAnalysis(List<SurfaceCell> cells, List<SurfaceComponent> components) {
-    public SurfaceAnalysis {
+public final class SurfaceAnalysis {
+    private final List<SurfaceCell> cells;
+    private final List<SurfaceComponent> components;
+    private final SchematicSnapshot sourceSnapshot;
+
+    /** Unbound evidence for inspection/classification; not eligible for cleanup planning. */
+    public SurfaceAnalysis(List<SurfaceCell> cells, List<SurfaceComponent> components) {
+        this(cells, components, null);
+    }
+
+    private SurfaceAnalysis(List<SurfaceCell> cells, List<SurfaceComponent> components,
+                            SchematicSnapshot sourceSnapshot) {
         Objects.requireNonNull(cells);
         Objects.requireNonNull(components);
 
@@ -35,6 +46,39 @@ public record SurfaceAnalysis(List<SurfaceCell> cells, List<SurfaceComponent> co
                 throw new IllegalArgumentException("Surface cell references missing component: " + cell.componentRoot());
             }
         }
+        this.cells = cells;
+        this.components = components;
+        this.sourceSnapshot = sourceSnapshot;
+    }
+
+    static SurfaceAnalysis fromSnapshot(SchematicSnapshot snapshot, List<SurfaceCell> cells,
+                                        List<SurfaceComponent> components) {
+        return new SurfaceAnalysis(cells, components, Objects.requireNonNull(snapshot));
+    }
+
+    /** Identity check: immutable snapshots cannot change beneath their analysis, including halo data. */
+    public boolean isFrom(SchematicSnapshot snapshot) {
+        return sourceSnapshot != null && sourceSnapshot == snapshot;
+    }
+
+    public List<SurfaceCell> cells() {
+        return cells;
+    }
+
+    public List<SurfaceComponent> components() {
+        return components;
+    }
+
+    /** Evidence equality does not grant source compatibility; use isFrom for that. */
+    @Override
+    public boolean equals(Object other) {
+        return other instanceof SurfaceAnalysis analysis
+                && cells.equals(analysis.cells) && components.equals(analysis.components);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(cells, components);
     }
 
     public static SurfaceAnalysis empty() {

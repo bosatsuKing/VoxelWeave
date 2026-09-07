@@ -1,4 +1,4 @@
-# Surface analysis domain (Steps 6A–6B)
+# Surface analysis and island cleanup (Steps 6A–7A)
 
 VoxelWeave surface analysis is a pure, read-only layer over captured schematic data.
 It does not smooth, delete, fill, recolor or otherwise mutate schematic data. Its job is to describe
@@ -157,12 +157,14 @@ Implemented through Step 6B:
 - local face/edge/corner/thin-feature/tip/isolated/unknown-boundary descriptors;
 - discrete exposure vector and local feature evidence.
 
+Step 7A additionally implements conservative disconnected-island cleanup planning as described below.
+
 Not implemented yet:
 
 - larger-neighborhood curvature fitting;
 - continuous or normalized surface-normal estimation;
 - configurable feature-preservation strength;
-- spike/island removal transforms;
+- spike shortening and connected-surface cleanup;
 - smoothing / relaxation;
 - gap filling;
 - contour rewriting;
@@ -170,3 +172,48 @@ Not implemented yet:
 
 Later operations should consume this analysis instead of re-implementing neighbor semantics or making
 destructive assumptions at incomplete boundaries.
+
+## Step 7A: disconnected-island cleanup planning
+
+`DisconnectedIslandCleanupPlanner.plan(snapshot, surface, features, request)` returns an immutable
+`ChangeSet`. `IslandCleanupRequest` requires a positive `maxComponentSize`, a caller-supplied
+`replacementState` and explicit `protectedFeatureKinds`. No Minecraft air state is assumed in the
+pure layer. To plan removal, the caller supplies the state its occupancy policy considers empty.
+
+The planner reuses `SurfaceAnalysis.smallIslandCandidates(...)`; it does not recompute connectivity.
+A component is eligible only if it is complete and its size is at most the threshold. Any unknown
+context or protected feature vetoes the whole component before changes are generated. Setting an
+empty protection set does not permit removing unknown/incomplete components. Replacement no-ops
+are omitted. Output is sorted, duplicate-free and restricted to the cells in the analyzed target;
+outside-target snapshot/halo entries are never emitted.
+
+### Source binding and stale analysis
+
+Analyzer-generated `SurfaceAnalysis` retains a private reference to its exact immutable source
+`SchematicSnapshot`; `SurfaceFeatureAnalysis` retains its exact source `SurfaceAnalysis`. Cleanup
+checks both identities before producing any result, including an empty result. Changes to occupied
+cells, formerly empty cells or outside-target halo data require a new snapshot and invalidate reuse.
+Even an equal snapshot copy or another equivalent analysis requires recomputation. This is deliberately
+conservative and costs constant time without hashing/scanning the full schematic again.
+
+The analysis collections are now final immutable classes with the existing constructors/accessors
+and structural equality. Public constructors and `empty()` create unbound evidence useful for
+inspection/classification; the planner rejects it. Only the analyzers attach source bindings. Equality
+compares evidence, not provenance, and must not be used as a stale-analysis check.
+
+Keep snapshot, target and analysis together for a planning operation. A changed operation target
+requires new surface and feature analysis; this planner always uses the scope recorded by its
+surface cells. Analysis retains its snapshot while cached, so discard obsolete analysis together
+with old workspace context. No global cache or persisted identifier is introduced.
+
+### Existing workspace flow
+
+```text
+snapshot + surface + features + explicit cleanup request
+    → planner → ChangeSet → EditWorkspace.preview(...)
+    → existing workspace commit / undo / redo
+```
+
+Planning does not apply changes. Workspace commit affects immutable workspace state only, not
+Litematica or Minecraft. UI, write-back, export, smoothing, relaxation, connected-surface cleanup,
+spike cleanup, contour movement and color tools remain outside Step 7A.

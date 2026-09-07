@@ -14,7 +14,7 @@ public final class SurfaceFeatureAnalyzer {
 
     public static SurfaceFeatureAnalysis analyze(SurfaceAnalysis surfaceAnalysis) {
         Objects.requireNonNull(surfaceAnalysis);
-        if (surfaceAnalysis.cells().isEmpty()) return SurfaceFeatureAnalysis.empty();
+        if (surfaceAnalysis.cells().isEmpty()) return SurfaceFeatureAnalysis.fromSurface(surfaceAnalysis, List.of());
 
         Map<GridPoint, SurfaceCell> cellsByPosition = new HashMap<>(surfaceAnalysis.cells().size());
         for (SurfaceCell cell : surfaceAnalysis.cells()) cellsByPosition.put(cell.position(), cell);
@@ -41,7 +41,7 @@ public final class SurfaceFeatureAnalyzer {
                     component.complete()));
         }
 
-        return new SurfaceFeatureAnalysis(descriptors);
+        return SurfaceFeatureAnalysis.fromSurface(surfaceAnalysis, descriptors);
     }
 
     private static SurfaceFeatureKind classify(
