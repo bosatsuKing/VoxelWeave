@@ -1,70 +1,108 @@
 # Codex setup for VoxelWeave
 
-This repository keeps project instructions small so Codex can spend context on the code and current task.
+VoxelWeave keeps persistent agent instructions deliberately small so Codex can spend context on the current task, code and evidence instead of replaying project history.
 
-## Recommended local settings
+This guidance follows the September 2026 OpenAI recommendation to revisit skills, `AGENTS.md`, and task prompts for GPT-6 Astra: keep triggers narrow, use progressive disclosure, read only what the task needs, avoid redundant scaffolding, and define the completion boundary clearly.
 
-Use ChatGPT sign-in rather than an API key when you want Codex usage to come from the ChatGPT plan allowance.
+Reference: https://developers.openai.com/blog/rethinking-skills-and-prompts-for-gpt-6-astra
 
-In the effective user Codex config (normally `~/.codex/config.toml`), preserve existing settings and add/merge:
+## Repository instructions
 
-```toml
-model_reasoning_effort = "low"
+`AGENTS.md` contains only durable repository-wide rules. It should not become a full project map, historical changelog, or mandatory preflight reading list.
 
-[features.context_management]
-experimental_mode = true
-```
+The task/request and active Issue/PR provide volatile scope and acceptance criteria. Domain-specific details stay in their corresponding docs and should be read only when the current decision needs them.
 
-Do not duplicate an existing `[features.context_management]` table or `experimental_mode` key. Back up the file before changing it.
+Do not require Codex to read every design document before every edit. Point it to the relevant source instead:
 
-Do not force a model name in this repository. Select GPT-6 Astra in Codex only when it is available to the signed-in account; otherwise use the best available Codex model and keep the same workflow.
+- product decisions → `docs/PRODUCT.md`
+- package/layer boundaries → `docs/ARCHITECTURE.md`
+- selection/snapshot semantics → `docs/SELECTION_DOMAIN.md`
+- surface/feature/protrusion analysis → `docs/SURFACE_ANALYSIS.md`
 
-## Local setup prompt
+## Model and local configuration
 
-Give Codex this prompt once on the development machine:
+Do not make VoxelWeave depend on one Codex model, one reasoning-effort setting, or an experimental context-management flag. Model availability and client defaults change independently of this repository.
 
-```text
-Inspect the effective Codex configuration on this PC and identify the config.toml actually being used (normally ~/.codex/config.toml). Read it before editing.
+Use the best available Codex model for the task. When GPT-6 Astra is selected, avoid adding extra handholding solely because older models needed it. Preserve user-level configuration unless a specific task requires a local setting change and the user explicitly requests it.
 
-Create a recoverable backup if a change is required. Preserve all unrelated settings and make the update idempotent: do not create duplicate TOML tables or keys.
+If local Codex configuration must be changed, inspect the effective config first, preserve unrelated settings, make the edit recoverable/idempotent, validate the result, and do not modify system-managed or plugin-cache files.
 
-Ensure:
-- model_reasoning_effort = "low"
-- [features.context_management].experimental_mode = true
+## Skills
 
-Validate the resulting TOML and verify whether the running Codex client actually recognizes the settings. Report:
-1. which config file is effective,
-2. whether each setting was already present or changed,
-3. backup location,
-4. validation result,
-5. whether a new thread or client restart is required.
+There is intentionally no repository `SKILL.md` today.
 
-Do not modify system-managed or plugin cache files.
-```
+Add a project skill only when VoxelWeave gains a repeatable specialized workflow that benefits from a distinct trigger. A useful skill should follow all of these rules:
 
-## Skills / instruction audit
+- the description is short and says exactly when the skill applies;
+- the trigger is narrow enough that ordinary adjacent work does not load it;
+- the root skill is a minimal router when multiple workflows exist;
+- supporting docs/scripts are loaded through progressive disclosure;
+- it does not repeat `AGENTS.md`, architecture docs, or active-Issue acceptance criteria;
+- it does not encode a long itinerary that a capable model can infer from the task itself.
 
-There is intentionally no project `SKILL.md` yet. Do not add one merely to save tokens. Add a project skill only when VoxelWeave has a repeatable specialized workflow that benefits from an explicit trigger.
+For user/global skills, audit only user-maintained files. Prefer deleting duplicate or broad trigger prose over adding another layer of exceptions.
 
-For user/global Skills, let Codex audit only user-maintained files. Remove duplicated prose and keep triggers narrow, but preserve safety boundaries, acceptance criteria, permissions and failure conditions.
+## Task prompts
 
-## Working pattern for Plus
+A good VoxelWeave task prompt normally needs only four things:
 
-Use Astra for bounded units of work rather than one giant implementation request:
+1. the goal or active Issue;
+2. the important acceptance criteria or unusual constraints;
+3. the requested completion state;
+4. any explicit permission boundary that differs from the repository default.
 
-1. State the current goal and acceptance criteria.
-2. Let Codex inspect only the relevant files and ask only questions that materially change the result.
-3. Implement the smallest complete vertical slice.
-4. Build/test it.
-5. Review the diff.
-6. Start the next small unit in a fresh task/thread when the previous unit is complete.
+Do not paste the repository map, full architecture, completed-step history, or `AGENTS.md` back into every prompt. Codex can inspect the relevant files itself.
 
-For VoxelWeave, GitHub Issue #1 is the first vertical slice. Do not ask Astra to implement smoothing, dithering, palette optimization, contour correction and export recovery all at once.
-
-## First VoxelWeave prompt
+Example for issue-scoped implementation:
 
 ```text
-Open bosatsuKing/VoxelWeave. Read AGENTS.md first, then GitHub Issue #1. Read docs/PRODUCT.md or docs/ARCHITECTURE.md only when needed for the current decision.
+Open bosatsuKing/VoxelWeave and use AGENTS.md plus Issue #<N> as the source of truth.
 
-Inspect the repository before changing anything. Implement the smallest runnable vertical slice from Issue #1. Keep the scope bounded, preserve the product boundaries in AGENTS.md, run the available build/tests, and report the resulting diff, verification evidence, and remaining blockers.
+Implement Issue #<N> only. Read additional design docs only when the current decision requires them. Reuse existing APIs and preserve the repository invariants.
+
+Continue through implementation, proportional verification, final diff review, and affected documentation. Fix failures caused by this change and rerun affected checks without asking for approval at each step.
+
+Stop at PR ready. Do not merge or start the next Issue.
+
+Report the branch/commit/PR, verification evidence, remaining limitations, and any blocker.
 ```
+
+For a documentation-only task, omit code/build language that does not apply. For a research spike, state the evidence required and explicitly say whether production implementation is out of scope.
+
+## Autonomy and decision boundaries
+
+Inside an authorized task, Codex should be allowed to inspect, edit, test, diagnose and fix the requested change without pausing for routine confirmation. Safe local tests use repository fixtures and have no production access; run affected tests, fix failures caused by the task, and rerun them as needed.
+
+Keep meaningful boundaries meaningful. GitHub/external mutations and work beyond the requested stop condition still require task authorization. Do not add defensive “ask before every step” language merely because older models once overreached; it can make Astra stop prematurely.
+
+## Verification
+
+Do not turn verification into a fixed ceremony for every task.
+
+- documentation-only work: consistency, links/references, and final diff;
+- pure logic: focused deterministic tests first;
+- runtime/integration/build changes: relevant builds and manual checks where the contract changed;
+- code/build PR readiness: repository CI remains the final full gate for the current PR head.
+
+The goal is evidence that matches the changed behavior, not maximum command count.
+
+## Persistence and completion
+
+GPT-6 Astra may be more conservative about deciding when a task is finished, so prompts should name the desired end state.
+
+If the user asks for implementation, verification and PR readiness, Codex should continue until all three are complete or a real blocker is found. Do not return after the first implementation merely because it compiles. Conversely, if the user asks for a design review or research spike only, stop before production code.
+
+Use the completion definitions in `AGENTS.md`: **Implementation complete**, **PR ready**, and **Merged / delivered**.
+
+## Periodic instruction audit
+
+When model behavior or the development workflow changes materially, audit these instructions instead of appending new rules indefinitely:
+
+- remove instructions the model already handles reliably;
+- shorten broad skill descriptions and triggers;
+- replace mandatory “read all docs” rules with contextual routing;
+- remove duplicate testing requirements;
+- keep explicit safety/product invariants and real permission boundaries;
+- verify examples and active-Issue references are not stale.
+
+The preferred direction is less persistent context with clearer task-specific acceptance criteria.
