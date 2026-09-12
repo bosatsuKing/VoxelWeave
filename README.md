@@ -1,5 +1,7 @@
 # VoxelWeave
 
+**English** | [日本語](README_JA.md)
+
 VoxelWeave is a Minecraft client-side tool for refining voxelized 3D models after conversion to Litematica schematics.
 
 ## Product goal
