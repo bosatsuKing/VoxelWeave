@@ -100,6 +100,13 @@ Step 6B adds local feature descriptors for `INTERIOR`, `FACE`, `EDGE`, `CORNER`,
 
 The Step 6B exposure vector is discrete/sign-normalized local evidence, not a floating-point fitted normal. Larger-neighborhood curvature or continuous normal fitting can be added later without changing the Step 6A topology contract.
 
+Step 7B-1 adds `ConnectedProtrusionAnalyzer.analyze(snapshot, surface, features, request)` and a
+source-bound `ConnectedProtrusionAnalysis`. It indexes existing cells/descriptors/components once,
+then follows bounded TIP-origin paths using occupied six-neighbor topology. It reuses component
+metadata without another component traversal. `ProtrusionEvidence` separates path descriptors from
+attachment descriptors and local support, with explicit termination and context reasons. It has no
+artifact classification, edit policy, `ChangeSet`, runtime integration or render-tick invocation.
+
 ### 4. Transformation layer
 
 Pure or near-pure operations over bounded schematic data.
@@ -237,6 +244,8 @@ Pure domain/analysis/transform/history code must not depend directly on Minecraf
 - local feature-kind classification and precedence
 - discrete exposure vectors / axis and opposite-face evidence
 - overlap deduplication and deterministic analysis ordering
+- bounded terminal paths, attachment support, TIP-to-TIP canonicalization and source binding
+- partial/unknown/overflow termination and converter-agnostic geometry fixtures
 - export policy and failure recovery logic when export is added
 
 ### Integration tests / smoke tests

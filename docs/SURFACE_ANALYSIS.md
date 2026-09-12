@@ -229,3 +229,82 @@ on the same immutable workspace; commit consumes that preview and undo/redo reus
 Planning does not apply changes. Workspace commit affects immutable workspace state only, not
 Litematica or Minecraft. UI, write-back, export, smoothing, relaxation, connected-surface cleanup,
 spike cleanup, contour movement and color tools remain outside Step 7A.
+
+## Step 7B-1: bounded connected-protrusion evidence
+
+`ConnectedProtrusionAnalyzer.analyze(snapshot, surface, features, request)` reuses the existing surface
+and feature results. `ProtrusionAnalysisRequest(maxTraceLength)` requires an explicit positive `int`.
+There is no default or hard maximum of 64; the value limits work, not geometric size or artifact risk.
+Inputs must have exact snapshot → surface → features identity bindings, including for empty results.
+The returned `ConnectedProtrusionAnalysis.isFrom(snapshot, surface, features)` checks all three exact
+source objects. A new snapshot or target requires fresh analysis. Discard obsolete results; do not
+retain them in a global cache or run analysis on render ticks.
+
+### Traversal and budget
+
+Seeds have exactly one occupied neighbor and no unknown faces (the existing local TIP condition).
+Seeds are processed in the surface result's coordinate order. Each visit uses the six cardinal faces:
+degree-two cells continue along the unique neighbor other than the previous cell; a degree of at least
+three identifies a local junction; degree one after the seed identifies another TIP. Feature kinds
+are associated with the observed cells and never determine the next step. Diagonal visual contact
+is not face connectivity. An absent occupied cell in the target index is not air.
+
+The budget counts **visited cells, including the seed and any attachment**. A one-cell bump needs
+two visits to establish its attachment. A three-cell TIP-to-TIP rod needs three visits. Natural
+termination at exactly the budget succeeds; otherwise the trace stops without visiting another cell.
+Each seed uses at most `L` visits, including when a component is incomplete. Existing component
+root, size and completeness are reused directly; no component BFS/DFS is repeated. Coordinate indexes
+give expected `O(N + S × L)` work, `O(N)` temporary indexes and up to `O(S × L)` retained evidence.
+No array is allocated to the caller's entire budget in advance.
+
+### Results and uncertainty
+
+`ProtrusionEvidence.path` is the ordered list of existing feature descriptors; `pathPositions()`
+exposes their coordinates. `attachment` is separate and excluded from `observedPathLength()`.
+`attachmentDirection()` points from the last path cell toward the attachment. Support faces are
+occupied directions **from the attachment**, excluding the face back toward the path. This is local
+support only: `JUNCTION_REACHED` does not prove a broad support surface. A thin branch is a junction too.
+Descriptors retain exposure vectors and surface-neighbor counts at their original positions/roles.
+
+`stepDirections()` contains observed path steps and, when present, the final attachment step.
+`directionChangeCount()` counts changes between those directions. A single visited cell has no
+observed step, and zero changes does not establish an unseen continuation. Terminal cell length is
+not arbitrary protrusion depth or neck width; a local exposure vector is not a fitted surface normal
+or the axis of the whole protrusion.
+
+| Termination | Measurement meaning |
+|---|---|
+| `JUNCTION_REACHED` | Complete context and a cell with at least three occupied neighbors reached |
+| `OTHER_TIP_REACHED` | Complete context and the opposite TIP reached; no supporting attachment |
+| `TRACE_LIMIT_REACHED` | Budget exhausted, with no established endpoint |
+| `INCOMPLETE_CONTEXT` | Unknown neighbor, incomplete component or occupied continuation/support outside target |
+| `COORDINATE_OVERFLOW` | A visited cell's neighbor cannot be represented within `long` coordinates |
+
+`exactPathLength()` is present only for complete junction/other-TIP outcomes. Other lengths describe
+the observed prefix only. Context issues retain component incompleteness, unknown neighbor data,
+occupied neighbors outside the target and coordinate overflow separately. Visited overflow takes
+precedence over other termination reasons. Otherwise any context issue takes precedence over a
+junction, other-TIP or budget outcome. Component incompleteness elsewhere does not prevent a bounded
+local trace, but it prevents a complete measurement. A locally known attachment may still be retained
+in an incomplete result. A cell with unknown local topology is retained as an uncertain path endpoint,
+never promoted to a confident attachment. All emitted positions belong to the analyzed target.
+
+Fully observed TIP-to-TIP paths start at the smaller endpoint in existing coordinate order and are
+emitted once. The reverse complete trace is suppressed by endpoint comparison, without pairwise path
+matching. Budget- or context-limited traces from different seeds remain separate, even when overlapping.
+
+### Scope and fixtures
+
+This pure analysis does not assign artifact scores, infer creator intent or generation cause, recommend
+deletion, produce `ChangeSet` values or mutate geometry. Identical geometry yields identical evidence
+whether interpreted as a decoration, a conversion bump or a normal-offset-like shape.
+
+Absence of protrusion evidence is not evidence that geometry is artifact-free. Thin shells, thickness
+transitions, stair-stepped slopes, diagonal contacts, wide protrusions, ridges and planes can be partly
+or wholly out of model. Tests use those geometries alongside bumps, long spires, bent decorations,
+thin branch junctions, context/budget boundaries and coordinate overflow. Fixtures are converter-agnostic;
+they do not copy converter algorithms or introduce block/color-assignment Smoothness semantics.
+
+Step 7B-2 cleanup policy, protection rules, edits, preview integration and arbitrary-width segmentation
+remain outside this analysis. Consumers must validate source identity and measurement context before
+any later policy use; neither complete evidence nor an empty result establishes permission to edit.
