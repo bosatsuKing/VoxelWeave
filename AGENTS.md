@@ -1,96 +1,84 @@
 # AGENTS.md — VoxelWeave
 
-VoxelWeave is a client-side Minecraft mod for refining Litematica schematics created from Blender / 3D-model conversion workflows.
+VoxelWeave is a client-side Minecraft mod for refining converted 3D-model / Litematica workflows inside Minecraft.
 
-## Priority
+## Task contract
 
-Explicit user instructions override this file. If instructions conflict or a requirement is ambiguous enough to change the result, state the conflict briefly; otherwise proceed.
+The explicit user request and, when present, the active Issue/PR define the current scope and acceptance criteria.
 
-Perform only stages authorized by the explicit user request and active task. The implementation loop does not grant permission for Git mutations, external actions or work beyond the requested stop condition. Tool access or an existing command approval is not task authorization.
+Within that authorized scope, proceed without repeatedly asking for approval to inspect files, edit code/docs, run safe local verification, diagnose failures, fix failures caused by the requested change, and rerun affected checks. Do not stop at the first compiling implementation when the requested completion state clearly includes verification, review, documentation, PR readiness, or delivery.
 
-## Product boundaries
+Repository or external mutations still follow the requested boundary. Creating/updating branches, commits, PRs, Issues, releases, or merging work requires that the current request authorizes that stage. Tool availability alone is not authorization.
 
-- Start after 3D → schematic conversion; do not recreate proprietary converters.
-- Preserve the original schematic and provide a recovery path for writes.
-- Preview and commit are separate states.
-- Editing operations must support reversible change sets / undo-redo.
-- Keep Minecraft/Litematica integration separate from pure analysis/transformation logic.
-- Preserve creator intent: do not make one generic procedural smoothing/gradient style the default answer to every shape.
-- Treat missing analysis context as unknown, not automatically as air/empty geometry.
-- Prefer conservative feature classification at uncertain boundaries.
-- Avoid expensive full-schematic work on render ticks.
+If a requirement is genuinely ambiguous enough to change the result, surface the decision briefly. Otherwise use repository evidence and continue.
+
+## Product invariants
+
+- Preserve the original schematic and a recovery path for writes.
+- Preview and commit are separate states; VoxelWeave edits must remain reversible through exact change history / undo-redo.
+- Keep Minecraft, Litematica, MaLiLib and converter-specific integration behind adapters. Pure domain, analysis and transformation code must not depend on those APIs.
+- Preserve creator intent. Do not turn one generic smoothing, gradient or procedural style into the default answer for every shape.
+- Missing or incomplete analysis context stays unknown; never silently reinterpret it as air or confident geometry.
+- Prefer conservative behavior at uncertain boundaries and fail closed on ambiguous capture/targeting.
+- Keep editing bounded to explicit selections/targets and avoid full-schematic work on render ticks.
 - No hidden networking, packet manipulation, forced chunk loading, or server automation.
 - Do not copy proprietary code, assets, UI, or reverse-engineered algorithms.
 
-## Quality gates
+## Read only what the task needs
 
-Apply the relevant verification gates to each focused change:
+Start with the current request and this file. For issue-scoped work, read the active Issue/PR next, then inspect only the source, tests and docs needed for the decision at hand.
 
-- code/build changes must pass the test/build gates in the implementation loop;
-- documentation-only changes require consistency, link and diff checks; Gradle build/test is not required unless executable configuration is affected or the active acceptance criteria require it;
-- pure logic gets deterministic tests where practical;
-- edits must stay inside the selected region;
-- analysis must not mutate source snapshots;
-- cleanup candidates that depend on complete connectivity must fail conservative when boundary data is unknown;
-- feature-preservation decisions must not treat `UNKNOWN_BOUNDARY` as a confident face/edge/corner/tip classification;
-- failed export must not corrupt the only valid copy;
-- missing/unsupported optional integrations fail with a readable message;
-- ambiguous Litematica capture must fail closed rather than mix placements;
-- do not mix unrelated refactors into feature work.
+Use these references when relevant rather than reading all of them by default:
 
-Bug fixes: observation → reproduction → root cause → fix → regression test.
+- product scope: `docs/PRODUCT.md`
+- architecture/package boundaries: `docs/ARCHITECTURE.md`
+- selection/snapshot semantics: `docs/SELECTION_DOMAIN.md`
+- surface/feature/protrusion analysis semantics: `docs/SURFACE_ANALYSIS.md`
+- Codex setup/instruction guidance: `docs/CODEX_SETUP.md`
 
-Dev-client verification is required for changes affecting Litematica capture/placement mapping or Minecraft renderer/UI behavior, and when required by the active acceptance criteria. Pure-only changes do not require client launch unless an integration contract is affected. Record observed behavior; Minecraft startup alone is not a passed UI or interactive test.
+Do not reconstruct completed work from old prompts when current code, docs, Issues or PRs already provide the source of truth. Avoid broad repository scans without a concrete reason.
 
-Before merge, pull requests must pass the JDK 25 GitHub Actions gates (`test`, default `build` and Litematica-enabled `build`) for the current PR head, unless the user explicitly approves an exception. Report exceptions as exceptions, never as passing checks.
+## Implementation workflow
 
-## Implementation loop
+Use the smallest workflow that completes the authorized task:
 
-For implementation work, use only the applicable, authorized stages:
+1. **Discover** — inspect current branch/status, active task, and the smallest relevant code/docs.
+2. **Plan** — identify affected files, reusable APIs, invariants, tests and the requested stop condition.
+3. **Implement** — make the smallest complete change; avoid unrelated refactors.
+4. **Verify** — run checks proportional to the change, fix in-scope failures, and rerun affected checks.
+5. **Self-review** — compare the final diff against the task and base branch for correctness, scope, safety and unnecessary work.
+6. **Document** — update only docs affected by verified behavior or remaining limitations.
+7. **Deliver** — only when authorized: commit/push/PR, wait for required CI, merge if authorized, then update/close the Issue when its completion boundary is met.
 
-Discover → Plan → Implement → Verify → Self-review → Document → PR → CI → Merge (if authorized) → Update issue → Stop.
+On an in-scope failure, diagnose from evidence and keep going until the requested completion state is reached. Stop only for a real blocker: a required user decision, missing permission, unavailable dependency/environment, or a failure that cannot be resolved safely inside scope. Report unverified gates explicitly; never label unavailable checks as passing.
 
-- Discover: inspect branch/status and compare the current request, and active issue when one exists, with current code. When requested to start from latest main, fetch and synchronize safely before editing; preserve existing work.
-- Plan: identify the smallest affected files, reusable APIs, safety invariants, tests and docs. Do not reimplement existing behavior or expand the task scope.
-- Implement: make focused changes that preserve the product boundaries.
-- Verify: for code/build changes, run `./gradlew test`, `./gradlew build` and `./gradlew build -PwithLitematica=true`, plus relevant isolation/write-API scans. Run `git diff --check` for every change. Apply the documentation-only and manual-verification conditions above.
-- Self-review: review the diff against the base branch, including new files, for correctness, scope, safety, determinism and unnecessary work.
-- Document: update only affected docs and record verified behavior and remaining limitations. Recheck the final diff; rerun affected verification if code changes.
-- PR/CI: when authorized, commit, push and open a focused PR. Verify test, default-build and Litematica-enabled-build CI results for the current PR head. Missing, pending or skipped checks are not green; report them unless the user explicitly accepts local verification instead.
-- Update issue: only when an issue exists and its update is authorized, mark verified acceptance criteria complete, including required manual verification. Close an implementation issue after merge and required gates pass, unless the user explicitly approves another completion boundary.
-- Stop at the requested boundary. Do not merge or start the next issue without authorization.
+## Verification
 
-On a verification, review or CI failure, diagnose from evidence:
+Verification should be proportional, not ritualized.
 
-- Resolvable within the authorized scope: make a focused fix, add a regression test where relevant, rerun affected verification and self-review.
-- Cannot complete within the authorized scope because of a required user decision, unavailable environment/dependency or missing permission: report the exact blocker and unverified gates, then stop dependent work.
+- Documentation-only changes: check content consistency, links/references and final diff. Gradle test/build is unnecessary unless executable configuration or active acceptance criteria are affected.
+- Pure logic changes: run focused deterministic tests first; add regression tests for bugs or newly defined behavior.
+- Integration/build/configuration changes: run the relevant build/integration checks and any manual verification required by the changed contract.
+- Before a code/build PR is considered **PR ready**, the current PR head must pass the repository JDK 25 CI gates: `test`, default `build`, and Litematica-enabled `build`, unless the user explicitly approves an exception.
+- Dev-client verification is required when capture/placement mapping, Minecraft renderer/UI behavior, or another runtime integration contract changes, or when the active acceptance criteria require it. Minecraft startup alone is not an interactive acceptance result.
+- Use `git diff --check` for implementation changes and review the complete diff, including new files, before delivery.
 
-Do not repeat speculative fixes or treat unavailable verification as success.
+Bug fixes follow: observation → reproduction → root cause → focused fix → regression test when practical.
 
 ## Completion states
 
-- Implementation complete: requested changes, applicable local verification, affected docs and self-review are complete, with no known blocker.
-- PR ready: the PR exists, required checks pass for its current head and no review blocker remains. Record any explicitly approved verification exception separately.
-- Merged / delivered: the PR is merged into the target branch and any required delivery acceptance criteria are verified. Update/close the issue only when authorized.
+Use the state the task actually requests:
 
-Report the state actually reached. PR creation is not delivery. Tasks that do not request a PR stop at their own requested boundary; do not create an issue or PR merely to satisfy this loop.
+- **Implementation complete** — requested change, applicable verification, affected docs and self-review are complete with no known blocker.
+- **PR ready** — PR exists, required checks pass for its current head, and no known review blocker remains.
+- **Merged / delivered** — the authorized PR is merged into the target branch and required delivery acceptance criteria are verified.
 
-## Context discipline
+Do not equate PR creation with delivery. If the user asks for a complete implementation, continue through verification and self-review rather than returning after the first pass. If the user sets an explicit stop point, honor it.
 
-- Read `AGENTS.md` and the current request first. For issue-scoped work, read the active issue (or its supplied contents), then only relevant source, tests and docs.
-- Use current repository code/docs as implementation context and the current request or active issue as the acceptance criteria. Do not reconstruct completed steps from old prompts; explicit user instructions retain priority.
-- Report material conflicts instead of silently changing the task's goal.
-- Keep implementation status in README and Issues/PRs, and algorithm-specific details in the relevant domain docs; do not add changing progress records to this file.
-- Do not reread unchanged references or scan the whole repository without a concrete reason.
-- Keep plans and progress updates short; focus on new findings, decisions and blockers.
+## Instruction maintenance
 
-## Read only when relevant
+Keep this file limited to durable repository-wide rules. Put changing implementation status in README/Issues/PRs and detailed algorithm semantics in the relevant domain docs.
 
-- Product scope: `docs/PRODUCT.md`
-- Architecture/package boundaries: `docs/ARCHITECTURE.md`
-- Selection/snapshot semantics: `docs/SELECTION_DOMAIN.md`
-- Surface/feature analysis semantics: `docs/SURFACE_ANALYSIS.md`
-- Codex local setup: `docs/CODEX_SETUP.md`
-- Current implementation unit: the active issue/PR; read parent issues only when needed
+Do not add a project `SKILL.md` merely to save prompt tokens. A repository skill is justified only for a repeatable specialized workflow with a narrow trigger. If one is added later, keep its description short, make the root skill a minimal router, and use progressive disclosure for supporting docs/scripts instead of loading a large recipe for every task.
 
-Do not reread every reference on every turn. Read the smallest relevant source first, then inspect code before changing dependencies or package structure.
+When model capabilities or workflows change materially, remove redundant scaffolding rather than layering new instructions on top of old ones.
